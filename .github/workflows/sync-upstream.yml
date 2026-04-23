@@ -32,7 +32,9 @@ jobs:
 
       - name: Fast-forward main
         run: |
-          git checkout main
+          # Explicit --track avoids "matched multiple remote tracking branches" when
+          # both origin/main and upstream/main exist and no local main is checked out yet.
+          git checkout -B main --track origin/main
           # Refuse anything other than a clean fast-forward — preserves history integrity.
           git merge --ff-only upstream/main
 
