@@ -155,3 +155,44 @@ After creating a plugin:
 >   copilot plugin uninstall <plugin-name>
 >   copilot plugin install ./plugins/<plugin-name>
 >   ```
+
+---
+
+## Azure resource tagging (org-wide standard)
+
+Every Azure resource provisioned in any LucidLabsAU repo must carry the standard tag set. The lowercase keys are required by the tenant `require-standard-tags` policy.
+
+| Tag | Type | Example |
+| --- | --- | --- |
+| `project` | kebab-case string | `lucid-operations` |
+| `environment` | enum | `prod` / `nonprod` / `dev` / `staging` |
+| `managedBy` | enum | `Bicep` / `Terraform` / `manual` |
+| `costCentre` | enum | `Integration` / `Platform` / `Security` / `Productivity` / `Identity` / `Governance` / `Marketing` / `Engineering` / `rd-platform` |
+| `application` | string | `Lucid Hub + MCP Server` |
+| `owner` | email | `keith@oakai.au` |
+| `mapping_tag` | GUID | `guid('LucidLabsAU/<repo>', '<path/to/file.bicep>')` |
+
+Legacy PascalCase keys (`Application`, `Environment`, `ManagedBy`, `CostCenter`) may co-exist for backwards compatibility but lowercase is canonical.
+
+### `mapping_tag` — Defender for Cloud code-to-cloud linkage
+
+The `mapping_tag` GUID lets Microsoft Defender for Cloud correlate this deployed Azure resource back to its source Bicep file (Cloud Security Explorer → *Provisioned by* → *Code repositories*). Use a deterministic GUID derived from repo + path so it survives redeploys:
+
+```bicep
+mapping_tag: guid('LucidLabsAU/<repo-name>', '<path/to/file.bicep>')
+```
+
+In Bicep:
+
+- **Single-file template:** add to a `commonTags` var and apply via `tags: commonTags`.
+- **Multi-module template:** parent declares `commonTags`; pass via `tags` param to each module. If a module has inline tags (no parent passthrough), add `mapping_tag` inline using its own path.
+- **Resource group declarations:** tag the RG with the full standard set including `mapping_tag`.
+
+**Resource types that REJECT user tags** (don't try): `Microsoft.Insights/diagnosticSettings`, `Microsoft.OperationsManagement/solutions`, `Microsoft.Automation/automationAccounts/runbooks`, `microsoft.alertsmanagement/smartDetectorAlertRules`, some `Microsoft.Web/certificates`, some `Microsoft.EventGrid/systemTopics`, `Microsoft.App/agents`. Their parents carry the linkage instead.
+
+**Caveats:**
+- Defender's IaC mapping is GA on Azure DevOps, partial on GitHub (the MSDO GitHub Action does not ship `IaCFileScanner`). Authoring `mapping_tag` now is forward-compatible.
+- ~12-hour propagation delay before Defender Cloud Security Explorer reflects the link.
+- Requires Defender CSPM plan (Foundational CSPM is insufficient).
+
+Reference: <https://learn.microsoft.com/azure/defender-for-cloud/iac-template-mapping>
