@@ -1,7 +1,7 @@
 {
   "name": "microsoft-365-agents-toolkit",
-  "description": "Toolkit for building Microsoft 365 Copilot declarative agents — scaffolding, JSON manifest development, and capability configuration.",
-  "version": "1.2.1",
+  "description": "Toolkit for building and evaluating Microsoft 365 Copilot declarative agents — scaffolding, JSON manifest development, capability configuration, and eval workflows.",
+  "version": "1.3.0",
   "author": {
     "name": "Microsoft"
   }

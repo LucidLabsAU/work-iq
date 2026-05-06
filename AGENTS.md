@@ -72,6 +72,7 @@ plugins/<plugin-name>/
   - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension
   - `declarative-agent-developer` skill — Scaffolding, JSON manifest authoring, capability configuration, deployment
   - `ui-widget-developer` skill — Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat
+  - `m365-agent-evaluator` skill — Generate, run, and analyze evaluation suites for M365 Copilot declarative agents
 
 - **workiq-productivity** — Read-only WorkIQ productivity insights. Bundles:
   - `action-item-extractor` skill — Extract action items with owners, deadlines, and priorities
