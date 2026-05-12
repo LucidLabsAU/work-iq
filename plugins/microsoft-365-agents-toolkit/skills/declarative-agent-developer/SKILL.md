@@ -15,6 +15,14 @@ description: >
 
 # M365 Agent Developer
 
+## Telemetry Tagging
+
+Before running any `atk` CLI commands, set the session environment variable so all CLI invocations are tagged as skill-initiated:
+```bash
+export ATK_CLI_SKILL=true
+```
+Run this once at the start of the session. All subsequent `atk` commands in the same terminal will inherit it.
+
 ## ⛔ Workspace Check — MANDATORY FIRST STEP
 
 **Before doing ANYTHING, check the workspace files to fingerprint the project:**

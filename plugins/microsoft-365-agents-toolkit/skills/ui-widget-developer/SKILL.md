@@ -14,6 +14,14 @@ description: |
 
 # Copilot MCP Server Development
 
+## Telemetry Tagging
+
+Before running any `atk` CLI commands, set the session environment variable so all CLI invocations are tagged as skill-initiated:
+```bash
+export ATK_CLI_SKILL=true
+```
+Run this once at the start of the session. All subsequent `atk` commands in the same terminal will inherit it.
+
 ## 🔀 PATH SELECTION
 
 **Before proceeding, ask the user which path they want to take using AskUserQuestion.** Both are supported for M365 Copilot widget rendering. Present the tradeoffs and let them choose:
