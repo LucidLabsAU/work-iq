@@ -1,32 +1,31 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  Sync the microsoft-365-agents-toolkit skill from the ATK source repo into the work-iq plugin.
+  Sync the teams-app-developer skill from OfficeDev/microsoft-365-agents-toolkit on GitHub.
 
 .DESCRIPTION
-  Copies bulk content (experts/, docs/, toolkit/, test-*, troubleshoot/, slack-to-teams/)
-  from the ATK vscode-extension skill into the work-iq plugin, then re-injects DA redirect
-  notices into conflict files. Skips SKILL.md (manually maintained).
+  Downloads the ATK skill tree from GitHub (no local clone required), then copies bulk
+  content into work-iq/plugins/microsoft-365-agents-toolkit/skills/teams-app-developer/
+  and re-injects DA redirect notices into conflict files. Skips SKILL.md (manually maintained).
 
-  After syncing, records the source commit hash in sync-manifest.json for audit purposes.
+  After syncing, updates scripts/sync-manifest.json with the source commit hash.
 
-.PARAMETER SourcePath
-  Path to the ATK skill root:
-  e.g. C:\path\to\microsoft-365-agents-toolkit\packages\vscode-extension\skills\microsoft-365-agents-toolkit
+.PARAMETER Ref
+  Branch, tag, or commit SHA to sync from (default: main).
 
 .PARAMETER TargetPath
-  Path to the work-iq skill root (defaults to the standard relative location).
+  Path to the work-iq teams-app-developer skill root (defaults to the standard relative location).
 
 .PARAMETER DryRun
   Print what would be copied/updated without writing any files.
 
 .EXAMPLE
-  .\sync-atk-skill.ps1 -SourcePath "C:\repos\atk\packages\vscode-extension\skills\microsoft-365-agents-toolkit"
-  .\sync-atk-skill.ps1 -SourcePath "..." -DryRun
+  .\sync-atk-skill.ps1
+  .\sync-atk-skill.ps1 -Ref "v5.12.0"
+  .\sync-atk-skill.ps1 -DryRun
 #>
 param(
-  [Parameter(Mandatory)]
-  [string]$SourcePath,
+  [string]$Ref = "main",
 
   [string]$TargetPath = (Join-Path $PSScriptRoot "..\plugins\microsoft-365-agents-toolkit\skills\teams-app-developer"),
 
@@ -36,14 +35,33 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$SourcePath = Resolve-Path $SourcePath
 $TargetPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($TargetPath)
+$ManifestPath = Join-Path $PSScriptRoot "sync-manifest.json"
 
-Write-Host "Source : $SourcePath"
+$SourceRepo   = "OfficeDev/microsoft-365-agents-toolkit"
+$SourcePrefix = "packages/vscode-extension/skills/microsoft-365-agents-toolkit"
+$ApiBase      = "https://api.github.com/repos/$SourceRepo"
+$RawBase      = "https://raw.githubusercontent.com/$SourceRepo"
+
+Write-Host "Source : github.com/$SourceRepo @ $Ref"
+Write-Host "Prefix : $SourcePrefix"
 Write-Host "Target : $TargetPath"
 if ($DryRun) { Write-Host "[DRY RUN] No files will be written.`n" -ForegroundColor Yellow }
 
-# ── Directories to copy verbatim (overwrite) ──────────────────────────────────
+# ── Resolve ref to commit SHA ─────────────────────────────────────────────────
+Write-Host "`nResolving ref '$Ref'..."
+$commitResp = Invoke-RestMethod "$ApiBase/commits/$Ref" -Headers @{ "User-Agent" = "sync-atk-skill" }
+$SourceCommit = $commitResp.sha
+Write-Host "  Resolved to: $SourceCommit"
+
+# ── Fetch file tree via GitHub API ────────────────────────────────────────────
+Write-Host "`nFetching file tree..."
+$treeResp = Invoke-RestMethod "$ApiBase/git/trees/$SourceCommit`?recursive=1" `
+  -Headers @{ "User-Agent" = "sync-atk-skill" }
+$allFiles = $treeResp.tree | Where-Object { $_.type -eq "blob" -and $_.path -like "$SourcePrefix/*" }
+Write-Host "  Found $($allFiles.Count) files under $SourcePrefix"
+
+# ── Directories to copy verbatim ─────────────────────────────────────────────
 $BulkDirs = @(
   "experts",
   "docs",
@@ -54,27 +72,42 @@ $BulkDirs = @(
   "slack-to-teams"
 )
 
-$Changed = [System.Collections.Generic.List[string]]::new()
+# Dirs that need DA redirect patching after copy
+$PatchDirs = @("create-project", "provision-deploy")
+$SyncDirs  = $BulkDirs + $PatchDirs
+$Changed   = [System.Collections.Generic.List[string]]::new()
 
-foreach ($dir in $BulkDirs) {
-  $src = Join-Path $SourcePath $dir
-  $tgt = Join-Path $TargetPath $dir
-  if (-not (Test-Path $src)) {
-    Write-Warning "Source directory not found, skipping: $src"
+function Download-File {
+  param([string]$RepoPath, [string]$LocalPath)
+  $url = "$RawBase/$SourceCommit/$RepoPath"
+  $dir = Split-Path $LocalPath -Parent
+  if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+  Invoke-WebRequest $url -OutFile $LocalPath -UseBasicParsing
+}
+
+foreach ($dir in $SyncDirs) {
+  $prefix = "$SourcePrefix/$dir/"
+  $dirFiles = $allFiles | Where-Object { $_.path -like "$prefix*" }
+  if ($dirFiles.Count -eq 0) {
+    Write-Warning "No files found for $dir/, skipping"
     continue
   }
+
   if ($DryRun) {
-    $count = (Get-ChildItem $src -Recurse -File).Count
-    Write-Host "  [WOULD COPY] $dir/ ($count files)"
+    Write-Host "  [WOULD COPY] $dir/ ($($dirFiles.Count) files)"
   } else {
-    Copy-Item -Path $src -Destination $tgt -Recurse -Force
-    $count = (Get-ChildItem $tgt -Recurse -File).Count
-    Write-Host "  [COPIED] $dir/ ($count files)"
+    Write-Host "  [COPYING] $dir/ ($($dirFiles.Count) files)..."
+    foreach ($file in $dirFiles) {
+      $relativePath = $file.path.Substring($SourcePrefix.Length + 1)  # strip source prefix
+      $localPath = Join-Path $TargetPath $relativePath
+      Download-File -RepoPath $file.path -LocalPath $localPath
+    }
+    Write-Host "  [DONE] $dir/"
   }
   $Changed.Add($dir)
 }
 
-# ── Files to copy then patch ───────────────────────────────────────────────────
+# ── DA redirect patching ──────────────────────────────────────────────────────
 $DA_CREATE_PROJECT_REDIRECT = @'
 
 > **Creating a Declarative Agent?** Use the **`declarative-agent-developer`** skill instead — it
@@ -95,79 +128,52 @@ $DA_PROVISION_REDIRECT = @'
 
 function Patch-DARedirect {
   param([string]$FilePath, [string]$Marker, [string]$Redirect)
+  if (-not (Test-Path $FilePath)) { return }
   $content = Get-Content $FilePath -Raw -Encoding UTF8
   if ($content -match [regex]::Escape($Redirect.Trim())) {
-    Write-Host "  [SKIP PATCH] Redirect already present: $FilePath"
+    Write-Host "  [SKIP PATCH] Redirect already present: $(Split-Path $FilePath -Leaf)"
     return
   }
   $patched = $content -replace [regex]::Escape($Marker), "$Marker`n$Redirect"
   if (-not $DryRun) {
     Set-Content $FilePath $patched -Encoding UTF8 -NoNewline
-    Write-Host "  [PATCHED] $FilePath"
+    Write-Host "  [PATCHED] $(Split-Path $FilePath -Leaf)"
   } else {
-    Write-Host "  [WOULD PATCH] $FilePath"
+    Write-Host "  [WOULD PATCH] $(Split-Path $FilePath -Leaf)"
   }
 }
 
-# create-project
-$cpSrc = Join-Path $SourcePath "create-project"
-$cpTgt = Join-Path $TargetPath "create-project"
-if (Test-Path $cpSrc) {
-  if (-not $DryRun) {
-    Copy-Item -Path $cpSrc -Destination $cpTgt -Recurse -Force
-  }
-  $cpFile = Join-Path $cpTgt "create-project.md"
-  if (Test-Path $cpFile) {
-    Patch-DARedirect -FilePath $cpFile `
-      -Marker "## Template Selection Guide" `
-      -Redirect $DA_CREATE_PROJECT_REDIRECT
-  }
-  $Changed.Add("create-project")
-}
+Patch-DARedirect `
+  -FilePath (Join-Path $TargetPath "create-project\create-project.md") `
+  -Marker "## Template Selection Guide" `
+  -Redirect $DA_CREATE_PROJECT_REDIRECT
 
-# provision-deploy
-$pdSrc = Join-Path $SourcePath "provision-deploy"
-$pdTgt = Join-Path $TargetPath "provision-deploy"
-if (Test-Path $pdSrc) {
-  if (-not $DryRun) {
-    Copy-Item -Path $pdSrc -Destination $pdTgt -Recurse -Force
-  }
-  $pdFile = Join-Path $pdTgt "provision-deploy.md"
-  if (Test-Path $pdFile) {
-    Patch-DARedirect -FilePath $pdFile `
-      -Marker "Provision Azure and M365 resources, then deploy your agent to the cloud." `
-      -Redirect $DA_PROVISION_REDIRECT
-  }
-  $Changed.Add("provision-deploy")
-}
+Patch-DARedirect `
+  -FilePath (Join-Path $TargetPath "provision-deploy\provision-deploy.md") `
+  -Marker "Provision Azure and M365 resources, then deploy your agent to the cloud." `
+  -Redirect $DA_PROVISION_REDIRECT
 
-# ── SKILL.md: skip (manually maintained) ──────────────────────────────────────
-Write-Host "`n  [SKIPPED] SKILL.md (manually maintained — update by hand after reviewing source changes)"
+# ── SKILL.md: skip (manually maintained) ─────────────────────────────────────
+Write-Host "`n  [SKIPPED] SKILL.md (manually maintained — review source changes and update by hand)"
 
-# ── Record sync manifest ───────────────────────────────────────────────────────
-$manifestPath = Join-Path $PSScriptRoot "sync-manifest.json"
-
-# Try to get git commit of source
-$sourceCommit = "unknown"
-try {
-  $gitOutput = & git -C $SourcePath log -1 --format="%H" 2>&1
-  if ($LASTEXITCODE -eq 0) { $sourceCommit = $gitOutput.Trim() }
-} catch { }
-
+# ── Update sync-manifest.json ─────────────────────────────────────────────────
 $manifest = [ordered]@{
-  last_sync           = (Get-Date -Format "yyyy-MM-dd")
-  source_path         = $SourcePath.ToString()
-  source_commit       = $sourceCommit
-  manually_maintained = @("SKILL.md")
+  last_sync            = (Get-Date -Format "yyyy-MM-dd")
+  source_repo          = $SourceRepo
+  source_ref           = $Ref
+  source_commit        = $SourceCommit
+  source_prefix        = $SourcePrefix
+  target_skill         = "teams-app-developer"
+  manually_maintained  = @("SKILL.md")
   da_redirect_injected = @("create-project/create-project.md", "provision-deploy/provision-deploy.md")
-  synced_dirs         = $Changed.ToArray()
+  synced_dirs          = $Changed.ToArray()
 }
 
 if (-not $DryRun) {
-  $manifest | ConvertTo-Json -Depth 5 | Set-Content $manifestPath -Encoding UTF8
-  Write-Host "`n  [WRITTEN] sync-manifest.json (source commit: $sourceCommit)"
+  $manifest | ConvertTo-Json -Depth 5 | Set-Content $ManifestPath -Encoding UTF8
+  Write-Host "  [WRITTEN] sync-manifest.json (commit: $($SourceCommit.Substring(0,12)))"
 } else {
-  Write-Host "`n  [WOULD WRITE] sync-manifest.json (source commit: $sourceCommit)"
+  Write-Host "  [WOULD WRITE] sync-manifest.json (commit: $($SourceCommit.Substring(0,12)))"
 }
 
 Write-Host "`nSync complete.`n"

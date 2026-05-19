@@ -1,8 +1,10 @@
 {
   "last_sync": "2026-05-19",
-  "source_path": "C:\\Users\\quke\\source\\securityhardenskill\\microsoft-365-agents-toolkit\\packages\\vscode-extension\\skills\\microsoft-365-agents-toolkit",
+  "source_repo": "OfficeDev/microsoft-365-agents-toolkit",
+  "source_ref": "main",
   "source_commit": "c461cfb618b81d7934d8098e108340aa9809b51b",
-  "target_skill_name": "teams-app-developer",
+  "source_prefix": "packages/vscode-extension/skills/microsoft-365-agents-toolkit",
+  "target_skill": "teams-app-developer",
   "manually_maintained": [
     "SKILL.md"
   ],
