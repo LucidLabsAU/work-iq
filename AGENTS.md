@@ -68,11 +68,12 @@ plugins/<plugin-name>/
   - `workiq` skill — Guides usage of the `ask_work_iq` MCP tool for emails, meetings, documents, Teams messages, and people
   - MCP server (`@microsoft/workiq`) with tools: `ask_work_iq`, `accept_eula`, `get_debug_link`
 
-- **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents. Bundles:
-  - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension
-  - `declarative-agent-developer` skill — Scaffolding, JSON manifest authoring, capability configuration, deployment
-  - `ui-widget-developer` skill — Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat
+- **microsoft-365-agents-toolkit** — Toolkit for building M365 Copilot declarative agents and Teams apps. Bundles:
+  - `install-atk` skill — Install or update the M365 Agents Toolkit CLI and VS Code extension *(prerequisite for all developer skills below)*
+  - `declarative-agent-developer` skill — Scaffolding, JSON manifest authoring, capability configuration, API/MCP plugin setup, OAuth, localization, and deployment for **declarative agents** *(requires ATK — use `install-atk` first if needed)*
+  - `teams-app-developer` skill — Build, test, and deploy code-based Teams apps: Custom Engine Agents (CEA), bots, tabs, message extensions, Agents Playground local testing, Azure provision/deploy, and Slack-to-Teams migration *(requires ATK — use `install-atk` first if needed)*
   - `m365-agent-evaluator` skill — Generate, run, and analyze evaluation suites for M365 Copilot declarative agents
+  - `ui-widget-developer` skill — Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat
 
 - **workiq-productivity** — Read-only WorkIQ productivity insights. Bundles:
   - `action-item-extractor` skill — Extract action items with owners, deadlines, and priorities

@@ -27,7 +27,7 @@ Run this once at the start of the session. All subsequent `atk` commands in the 
 
 **Before doing ANYTHING, check the workspace files to fingerprint the project:**
 
-1. Run `npx -y --package @microsoft/m365agentstoolkit-cli atk --version` to confirm ATK CLI is installed. If not found → **Stop.** Tell the user to install ATK.
+1. Run `npx -y --package @microsoft/m365agentstoolkit-cli atk --version` to confirm ATK CLI is installed. If not found or version is too old → **Stop.** Tell the user to use the **`install-atk` skill** to install or update ATK, then return here.
 2. Check for `m365agents.yml` or `teamsApp.yml` at the project root.
 3. Check for `appPackage/declarativeAgent.json`.
 4. Check for non-agent indicators (`package.json` with express/react/next, `src/index.js`, `app.py`, etc.)
@@ -90,7 +90,7 @@ When you encounter ANY problem (missing files, malformed JSON, validation errors
 
 ## ATK CLI Setup
 
-Before running any ATK commands, check if the ATK CLI is available by running `npx -y --package @microsoft/m365agentstoolkit-cli atk --version`. If not found, **STOP and tell the user** — do NOT attempt to install it yourself.
+Before running any ATK commands, check if the ATK CLI is available by running `npx -y --package @microsoft/m365agentstoolkit-cli atk --version`. If not found or version is too old → **STOP and tell the user to use the `install-atk` skill** — do NOT attempt to install it yourself.
 
 All commands use the `npx -y --package @microsoft/m365agentstoolkit-cli atk` prefix (e.g., `npx -y --package @microsoft/m365agentstoolkit-cli atk provision --env local`).
 
