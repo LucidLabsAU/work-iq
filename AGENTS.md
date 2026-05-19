@@ -73,6 +73,7 @@ plugins/<plugin-name>/
   - `declarative-agent-developer` skill — Scaffolding, JSON manifest authoring, capability configuration, deployment
   - `teams-app-developer` skill — Build, test, and deploy code-based Teams apps: bots, CEA, tabs, message extensions, Agents Playground, Azure provision/deploy, and Slack-to-Teams migration
   - `ui-widget-developer` skill — Build MCP servers with OpenAI Apps SDK widget rendering for Copilot Chat
+  - `m365-agent-evaluator` skill — Generate, run, and analyze evaluation suites for M365 Copilot declarative agents
 
 - **workiq-productivity** — Read-only WorkIQ productivity insights. Bundles:
   - `action-item-extractor` skill — Extract action items with owners, deadlines, and priorities
