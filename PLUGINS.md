@@ -49,6 +49,7 @@ Once the marketplace is registered, install any plugin with a single command:
 ```bash
 # Install a single plugin
 /plugin install workiq@work-iq
+/plugin install workiq-preview@work-iq
 /plugin install microsoft-365-agents-toolkit@work-iq
 /plugin install workiq-productivity@work-iq
 ```
@@ -65,6 +66,7 @@ copilot plugin list
 
 ```bash
 copilot plugin uninstall workiq
+copilot plugin uninstall workiq-preview
 copilot plugin uninstall microsoft-365-agents-toolkit
 copilot plugin uninstall workiq-productivity
 ```
@@ -76,8 +78,9 @@ copilot plugin uninstall workiq-productivity
 | # | Plugin | Skills | Description |
 |---|--------|--------|-------------|
 | 1 | [**workiq**](#workiq) | 1 | Query Microsoft 365 data with natural language |
-| 2 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
-| 3 | [**workiq-productivity**](#workiq-productivity) | 9 | Read-only productivity insights across M365 |
+| 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview build with the full entity tool surface (read + write) |
+| 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
+| 4 | [**workiq-productivity**](#workiq-productivity) | 9 | Read-only productivity insights across M365 |
 
 ---
 
@@ -121,6 +124,38 @@ copilot plugin uninstall workiq-productivity
 | `workiq ask` | Ask a question or enter interactive mode |
 | `workiq mcp` | Start MCP stdio server |
 | `workiq version` | Show version information |
+
+---
+
+## workiq-preview
+
+> **Preview build.** Same natural-language access as `workiq`, plus a broader set of entity tools for direct, structured M365 reads and writes — fetch, create, update, delete, do-action, call-function, schema discovery, and blob upload/download.
+
+**Install:** `/plugin install workiq-preview@work-iq`
+**Source:** [`plugins/workiq-preview/`](./plugins/workiq-preview/)
+
+### MCP Servers
+
+| Server | Tools |
+|--------|-------|
+| `@microsoft/workiq@preview` | `ask_work_iq`, `fetch_work_iq`, `fetch_blob_work_iq`, `get_schema_work_iq`, `search_paths_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `upload_blob_work_iq`, `accept_eula`, `get_debug_link` |
+
+### Skills
+
+| Skill | Description |
+|-------|-------------|
+| [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask_work_iq` for semantic questions plus entity tools for fast, structured reads and writes |
+
+### Example prompts
+
+```
+"What did John say about the proposal?"
+"List my unread emails from Sarah this week"
+"Create a calendar event Friday at 3pm with the design team"
+"Accept the 2pm meeting from Rob"
+"Send the draft email to the engineering distribution list"
+"Download the latest PowerPoint from my OneDrive 'Specs' folder"
+```
 
 ---
 
