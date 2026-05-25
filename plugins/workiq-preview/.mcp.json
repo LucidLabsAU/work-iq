@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "workiq-preview": {
+      "command": "npx",
+      "args": ["-y", "@microsoft/workiq@preview", "mcp"],
+      "tools": ["*"]
+    }
+  }
+}

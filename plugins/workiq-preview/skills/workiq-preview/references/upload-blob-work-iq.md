@@ -1,0 +1,56 @@
+# upload_blob_work_iq
+
+Upload a local file to a WorkIQ path via HTTP PUT. Use this to upload files to OneDrive or SharePoint.
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `targetUrl` | string | Yes | The target path for the upload (e.g., `/me/drive/root:/{filename}:/content`). Must be a relative path — do not include a base URL. |
+| `filePath` | string | Yes | The absolute local file path to upload. |
+
+## When to Use
+
+- Uploading a file to OneDrive
+- Uploading a file to a SharePoint document library
+- Replacing the content of an existing file
+
+## Path Conventions
+
+| Action | Path pattern |
+|--------|-------------|
+| Upload to OneDrive root by filename | `/me/drive/root:/{filename}:/content` |
+| Upload to a specific folder | `/me/drive/root:/{folder}/{filename}:/content` |
+| Replace a file by item ID | `/me/drive/items/{id}/content` |
+| Upload to SharePoint | `/drives/{driveId}/root:/{filename}:/content` |
+
+## Gotchas
+
+- **File size limit**: Simple PUT uploads work for files up to 4MB. For larger files, use the Graph large file upload session pattern (not currently supported directly — use `create_entity_work_iq` to initiate an upload session).
+- The URL uses the Graph path-based format `root:/{path}:/content` — include the leading `/` before the filename.
+
+## Examples
+
+### Upload a file to OneDrive root
+```json
+{
+  "targetUrl": "/me/drive/root:/report.pdf:/content",
+  "filePath": "C:\\Users\\user\\Documents\\report.pdf"
+}
+```
+
+### Upload a file to a subfolder in OneDrive
+```json
+{
+  "targetUrl": "/me/drive/root:/Projects/Alpha/spec.docx:/content",
+  "filePath": "C:\\Users\\user\\Documents\\spec.docx"
+}
+```
+
+### Replace an existing file by ID
+```json
+{
+  "targetUrl": "/me/drive/items/{id}/content",
+  "filePath": "C:\\Users\\user\\Documents\\updated-report.pdf"
+}
+```
