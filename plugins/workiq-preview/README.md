@@ -1,6 +1,6 @@
-# Work IQ Plugin
+# Work IQ Plugin — Preview
 
-> Query Microsoft 365 data with natural language — emails, meetings, documents, Teams messages, and more.
+> **Preview build.** Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask_work_iq` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
 
 ## Installation
 
@@ -26,11 +26,13 @@ Add to your `.mcp.json` or IDE MCP settings:
 
 ## Updating
 
-If you installed WorkIQ globally with npm, run the following command to update to the latest version:
+If you installed WorkIQ globally with npm, run the following command to install or update to the latest preview build:
 
 ```bash
-npm update -g @microsoft/workiq@preview
+npm install -g @microsoft/workiq@preview
 ```
+
+> **Note:** `npm update` ignores dist-tag specifiers, so it will not switch you to the preview channel. Use `npm install` as shown above.
 
 To verify the installed version after updating:
 
@@ -42,31 +44,53 @@ workiq version
 
 ## Usage
 
+The preview plugin exposes the full WorkIQ tool surface — read **and** write — via 11 MCP tools.
+
+### Semantic queries (`ask_work_iq`)
+
 ```
-# Emails
 "What did John say about the proposal?"
 "Summarize emails from the leadership team this week"
-
-# Meetings
-"What's on my calendar tomorrow?"
-"What are my upcoming meetings this week?"
-
-# Documents
-"Find my recent PowerPoint presentations"
-"Find documents I worked on yesterday"
-
-# Teams
-"Summarize today's messages in the Engineering channel"
-
-# People
+"What's top of mind for Sarah?"
+"Find the design doc for the authentication system"
 "Who is working on Project Alpha?"
 ```
+
+### Structured reads (`fetch_work_iq`, `search_paths_work_iq`, `get_schema_work_iq`, `fetch_blob_work_iq`)
+
+```
+"List my unread emails from Sarah this week"
+"What meetings do I have Monday?"
+"Show me the channels in the DevX team"
+"List files in my OneDrive 'Specs' folder"
+"Who are Rob's direct reports?"
+"Download the latest PowerPoint from my OneDrive 'Specs' folder"
+```
+
+### Writes (`create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `upload_blob_work_iq`)
+
+> ⚠️ Writes execute immediately and are visible to other people or unrecoverable. The skill is instructed to confirm with you before sending mail, forwarding, accepting/declining meetings, or permanently deleting.
+
+```
+"Send the draft email to the engineering distribution list"
+"Create a calendar event Friday at 3pm with the design team"
+"Accept the 2pm meeting from Rob"
+"Decline the Monday standup — I'll catch up on the recording"
+"Mark Sarah's last three emails as read"
+"Reply to the deadline thread with 'on track for Friday'"
+"Upload report.pdf to my OneDrive root"
+"Move the design review thread to the Archive folder"
+```
+
+### CLI commands (out-of-band of the MCP server)
+
+Some operations are not exposed as MCP tools and must be run as shell commands — `auth login`/`logout`, `auth consent` (granting additional Graph scopes), `config show`/`set`/`reset`, `version`. Invoke them via `npx -y @microsoft/workiq@preview <command>` to guarantee you hit the same binary the MCP server uses. See [`skills/workiq-preview/references/cli-commands.md`](./skills/workiq-preview/references/cli-commands.md) for the full reference.
 
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Query M365 Copilot for workplace intelligence |
+| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask_work_iq` for semantic questions plus entity tools for fast, structured M365 reads and writes |
 
 ## Platform Support
 

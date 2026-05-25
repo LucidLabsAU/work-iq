@@ -33,10 +33,13 @@ Common URL encodings for OData query values:
 | `(` | `%28` | `$filter=startsWith%28subject%2C%27Re%3A%27%29` |
 | `)` | `%29` | (same as above) |
 | `:` | `%3A` | (in string literals) |
-| `/` (in values) | `%2F` | `$orderby=receivedDateTime%20desc` |
-| `,` (in values) | `%2C` | (in string literals) |
+| `/` *(only inside string-literal values)* | `%2F` | (e.g. inside a quoted `$filter` value) |
+| `,` *(only inside string-literal values)* | `%2C` | (in string literals; **not** in `$select=a,b,c` lists) |
 
-> **Tip:** OData keywords and property paths (like `$filter=`, `isRead`, `eq`) use standard ASCII and do not need encoding. Only encode the *values* and string literals within query parameters.
+> **Important — what NOT to encode:**
+> - OData **property paths** like `start/dateTime`, `from/emailAddress/address`: leave the `/` raw. Use `$orderby=start/dateTime`, never `$orderby=start%2FdateTime`.
+> - **Comma-separated `$select` lists** like `$select=subject,from,receivedDateTime`: leave the `,` raw. Only encode commas that appear inside a quoted value.
+> - OData keywords and field names (`$filter=`, `isRead`, `eq`, `desc`): standard ASCII, no encoding needed.
 
 ## OData Query Tips
 
@@ -62,7 +65,7 @@ Common URL encodings for OData query values:
 
 ### Get upcoming calendar events
 ```json
-{ "entityUrls": ["/me/events?$top=5&$orderby=start%2FdateTime&$select=subject,start,end,location"] }
+{ "entityUrls": ["/me/events?$top=5&$orderby=start/dateTime&$select=subject,start,end,location"] }
 ```
 
 ### Get a specific message by ID

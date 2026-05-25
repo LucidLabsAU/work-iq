@@ -48,7 +48,7 @@ copilot plugin install workiq@microsoft
 
 **Fix:**
 
-1. Decide which channel (stable or preview) you want to use, and uninstall the others (see the "Multiple WorkIQ plugins installed" section above).
+1. Decide which channel (stable or preview) you want to use, and uninstall the others (see the "Both `workiq` and `workiq-preview` installed side-by-side" section above).
 2. If you have a globally installed `workiq` (`npm ls -g @microsoft/workiq`), make sure its version matches the one the MCP server runs (`@latest` for stable, `@preview` for preview).
 3. If config looks corrupted or out of sync, reset it and re-consent:
 

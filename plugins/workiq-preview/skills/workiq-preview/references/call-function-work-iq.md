@@ -1,20 +1,21 @@
 # call_function_work_iq
 
-Call a WorkIQ Graph function via HTTP GET. Graph functions are named operations that return computed results rather than stored entities — for example, `delta` (change tracking), `reminderView` (upcoming reminders), or `getSchedule` (free/busy availability).
+Call an OData function via HTTP GET. Functions are **side-effect-free** named operations that return computed results — for example, `delta` (change tracking on a collection) or `reminderView` (computed list of upcoming reminders).
+
+**Use this tool only for true GET-shaped OData functions.** If the operation is invoked with a request body (e.g. `getSchedule`, `findMeetingTimes`, `sendMail`), it's an **action**, not a function — use `do_action_work_iq` instead, even when the path looks function-like.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `functionUrl` | string | Yes | The function path including any required inline parameters (e.g., `/me/reminderView(startDateTime='...',endDateTime='...')`). Must be relative to the domain root — start with `/`, do not include a scheme or authority (`https://graph.microsoft.com` ❌, `/me/reminderView(...)` ✅). URL-encode any special characters in inline parameter values. |
+| `functionUrl` | string | Yes | The function path including any required inline parameters (e.g., `/me/reminderView(startDateTime='...',endDateTime='...')`). Must be a server-relative path — start with `/`, no scheme or authority (`https://graph.microsoft.com` ❌, `/me/reminderView(...)` ✅). URL-encode any special characters in inline parameter values. |
 
 ## When to Use
 
-- When you need free/busy availability for scheduling (`getSchedule`)
-- When you need upcoming meeting reminders (`reminderView`)
-- Any time a Graph path requires function call syntax `functionName(param=value)`
+- When you need a computed result that takes no request body (`delta`, `reminderView`)
+- Any time the OData path uses function call syntax `functionName(param=value)` and the operation is documented as GET
 
-Distinguish from `fetch_work_iq`: use `call_function_work_iq` when the path includes a function invocation with inline parameters. Use `fetch_work_iq` for plain collection or item paths.
+If you're not sure whether something is a function or an action, run `get_schema_work_iq` on the path with `httpMethod: "get"` first. If no GET schema is returned but POST is, route to `do_action_work_iq`.
 
 ## Examples
 
@@ -23,9 +24,8 @@ Distinguish from `fetch_work_iq`: use `call_function_work_iq` when the path incl
 { "functionUrl": "/me/reminderView(startDateTime='2024-06-01T00:00:00Z',endDateTime='2024-06-30T23:59:59Z')" }
 ```
 
-### Get free/busy schedule for multiple users
+### Track changes to a mail folder (delta query)
 ```json
-{ "functionUrl": "/me/calendar/getSchedule" }
+{ "functionUrl": "/me/mailFolders/inbox/messages/delta" }
 ```
-
 

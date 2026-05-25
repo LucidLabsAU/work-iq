@@ -1,6 +1,6 @@
 ---
 name: workiq-preview
-description: Query Microsoft 365 Copilot for workplace intelligence - emails, meetings, documents, Teams messages, and people information. USE THIS SKILL for ANY workplace-related question where the answer likely exists in Microsoft 365 data. This includes questions about what someone said, shared, or communicated; meetings, emails, messages, or documents; priorities, decisions, or context from colleagues; organizational knowledge; project status; team activities; or any information that would be in Outlook, Teams, SharePoint, OneDrive, or Calendar. When in doubt about workplace context, try WorkIQ first. Trigger phrases include "what did [person] say", "what are [person]'s priorities", "top of mind from [person]", "what was discussed", "find emails about", "what meetings", "what documents", "who is working on", "what's the status of", "any updates on", etc.
+description: Preview build of WorkIQ — the full Microsoft 365 tool surface: agentic semantic queries via ask_work_iq PLUS direct, structured reads and writes for emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people. USE THIS SKILL for ANY workplace question or write action where the data lives in Microsoft 365. Read triggers, "what did [person] say", "what are [person]'s priorities", "top of mind from [person]", "what was discussed", "find emails about", "what meetings do I have", "what documents", "who is working on", "what's the status of", "any updates on". Write triggers, "send email", "reply to [thread]", "forward to", "create a calendar event", "schedule a meeting", "accept/decline the meeting", "mark as read", "delete the draft", "upload to OneDrive", "download attachment". When in doubt about workplace context, try WorkIQ first.
 compatibility: >
   Requires Node.js 18+ and npm (provides `npx`, used to launch the
   @microsoft/workiq MCP server). If missing, see
@@ -143,20 +143,40 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 
 All URL parameters (`entityUrls`, `parentUrl`, `entityUrl`, `actionUrl`, `functionUrl`, `blobUrl`, `targetUrl`) **must**:
 
-1. **Omit any scheme, authority, and API version prefix** — start with `/me/...` or `/users/...`, never include a full `https://...` URL or a `/v1.0/...` prefix
-   - ❌ `https://example.com/v1.0/me/messages`
+1. **Server-relative path only** — start with `/` and **omit** any scheme, authority, or API-version prefix. Valid path roots include `/me/...`, `/users/...`, `/teams/...`, `/groups/...`, `/sites/...`, `/drives/...`, `/planner/...`, and others — anything Graph exposes.
+   - ❌ `https://graph.microsoft.com/v1.0/me/messages`
    - ❌ `/v1.0/me/messages`
    - ✅ `/me/messages`
+   - ✅ `/teams/{teamId}/channels`
 2. **URL-encode all query parameter values** — spaces become `%20`, quotes become `%27`, etc.
    - ❌ `$orderby=receivedDateTime desc`
    - ✅ `$orderby=receivedDateTime%20desc`
+   - **Exception:** OData property paths (the `/` separator between navigation properties, e.g. `start/dateTime`, `from/emailAddress/address`) are **not** encoded. The `/` only gets encoded when it appears inside a string literal value.
+
+### ⚠️ `jsonBody` Format Rules (write tools)
+
+`create_entity_work_iq`, `update_entity_work_iq`, `do_action_work_iq`, and `call_function_work_iq` accept a `jsonBody` parameter. **`jsonBody` is a string** containing JSON, **not** a JSON object — the value must be a JSON-encoded string with quotes escaped.
+
+- ❌ `"jsonBody": { "subject": "Hello" }` — object, rejected by schema
+- ❌ `"jsonBody": "{"subject":"Hello"}"` — broken quoting
+- ✅ `"jsonBody": "{\"subject\":\"Hello\"}"` — JSON-encoded string
+
+If a write tool returns a schema error mentioning `jsonBody` type, this is almost certainly the cause. Re-serialize the body and retry.
+
+### ⚠️ Placeholders in examples are not literals
+
+Reference examples use `{id}`, `{listId}`, `{teamId}`, `{taskId}`, `{driveId}`, `{messageId}`, etc. as placeholders for IDs you obtained from a prior call. **Do not call a URL with `{id}` literal in it** — replace it with the actual ID first (typically from `fetch_work_iq` or `create_entity_work_iq`). A literal `/me/messages/{id}` will return 404 / "resource not found".
+
+### ⚠️ Write actions execute immediately — confirm with the user first
+
+`do_action_work_iq` (especially `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`) and write-side `create_entity_work_iq` / `update_entity_work_iq` / `delete_entity_work_iq` calls take effect immediately and are visible to other people (recipients, meeting organizers) or unrecoverable. **Before invoking any write tool, summarize what you're about to do and get the user's confirmation.** This is especially important for sendMail, forward, decline, and permanentDelete.
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
 | `search_paths_work_iq` | Discover available API paths | `filter` (regex), `backend` |
 | `get_schema_work_iq` | Inspect fields and body shape for a path | `path`, `httpMethod`, `apiVersion` |
 | `fetch_work_iq` | Fetch entities by path (GET) | `entityUrls[]` — supports OData (`$filter`, `$select`, `$top`) |
-| `call_function_work_iq` | Call named functions (delta, getSchedule, reminderView) | `functionUrl` with inline function params |
+| `call_function_work_iq` | Call named OData functions — GET-shaped, side-effect-free, parenthesised inline params (e.g. `delta`, `reminderView`) | `functionUrl` with inline function params |
 | `create_entity_work_iq` | Create a new entity (POST to collection) | `parentUrl`, `jsonBody` |
 | `update_entity_work_iq` | Update fields on an existing entity (PATCH) | `entityUrl` with ID, `jsonBody` |
 | `delete_entity_work_iq` | Delete an entity (DELETE) | `entityUrl` with ID |
@@ -169,7 +189,7 @@ Read the relevant reference file for full parameter details and examples:
 - `references/search-paths-work-iq.md` — if you need to discover what paths are available
 - `references/get-schema-work-iq.md` — if you need to understand an entity's fields before reading or writing
 - `references/fetch-work-iq.md` — if you need to fetch structured or filtered M365 data
-- `references/call-function-work-iq.md` — if the path uses function call syntax (e.g., `getSchedule`)
+- `references/call-function-work-iq.md` — if the path uses OData function call syntax (e.g., `reminderView(...)`, `delta`)
 - `references/create-entity-work-iq.md` — if you need to create a new calendar event, email draft, task, etc.
 - `references/update-entity-work-iq.md` — if you need to update fields on an existing entity
 - `references/delete-entity-work-iq.md` — if you need to delete an entity
