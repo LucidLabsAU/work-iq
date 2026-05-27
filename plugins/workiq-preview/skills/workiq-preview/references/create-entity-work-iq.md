@@ -2,6 +2,8 @@
 
 Create a new WorkIQ entity by POSTing to a collection path. Use this to create calendar events, draft emails, tasks, Teams messages, and other M365 resources.
 
+> **⚠️ Writes are persistent.** Creating a calendar event sends invitations to attendees; creating a draft email is invisible until sent but takes up space; creating a task or message in a shared list is visible to collaborators. **Before invoking, summarize what you're about to create (subject, attendees, due date, parent list/folder) and get the user's explicit confirmation.**
+
 ## Parameters
 
 | Parameter | Type | Required | Description |
@@ -46,13 +48,5 @@ Create a new WorkIQ entity by POSTing to a collection path. Use this to create c
 {
   "parentUrl": "/me/todo/lists/{listId}/tasks",
   "jsonBody": "{\"title\":\"Review pull request\",\"dueDateTime\":{\"dateTime\":\"2024-06-05T17:00:00\",\"timeZone\":\"UTC\"}}"
-}
-```
-
-### Create a reply to a message
-```json
-{
-  "parentUrl": "/me/messages/{id}/reply",
-  "jsonBody": "{\"comment\":\"Thanks for the update!\"}"
 }
 ```

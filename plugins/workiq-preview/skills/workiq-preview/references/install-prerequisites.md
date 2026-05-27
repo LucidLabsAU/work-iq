@@ -7,7 +7,7 @@ The WorkIQ MCP server is distributed as the npm package `@microsoft/workiq` and 
 
 To verify what's installed:
 
-```powershell
+```bash
 node --version
 npm --version
 npx --version
@@ -49,7 +49,7 @@ Download and run the Windows installer (`.msi`) from <https://nodejs.org/en/down
 
 ### Option A — Homebrew (recommended)
 
-```powershell
+```bash
 brew install node
 ```
 
@@ -59,7 +59,7 @@ Download and run the macOS installer (`.pkg`) from <https://nodejs.org/en/downlo
 
 ### Option C — nvm (if you manage multiple Node versions)
 
-```powershell
+```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 # Then in a new shell:
 nvm install --lts
@@ -72,32 +72,32 @@ nvm use --lts
 
 ### Debian / Ubuntu
 
-```powershell
+```bash
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
 ### Fedora / RHEL / CentOS Stream
 
-```powershell
+```bash
 sudo dnf install -y nodejs npm
 ```
 
 ### Arch / Manjaro
 
-```powershell
+```bash
 sudo pacman -S --noconfirm nodejs npm
 ```
 
 ### Alpine
 
-```powershell
+```bash
 sudo apk add --no-cache nodejs npm
 ```
 
 ### Any distro — nvm (per-user, no sudo)
 
-```powershell
+```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 # Then in a new shell:
 nvm install --lts
@@ -110,11 +110,11 @@ nvm use --lts
 
 [Volta](https://volta.sh) installs and pins Node.js per project and works the same on Windows, macOS, and Linux.
 
-```powershell
+```bash
 # macOS / Linux
 curl https://get.volta.sh | bash
 
-# Windows
+# Windows (PowerShell)
 winget install Volta.Volta
 
 # Then in a new shell:

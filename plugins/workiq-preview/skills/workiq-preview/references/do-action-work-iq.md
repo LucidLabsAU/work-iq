@@ -1,6 +1,8 @@
 # do_action_work_iq
 
-Execute a WorkIQ action via HTTP POST. Actions are named operations that perform a task (rather than creating a resource) — such as sending an email, copying a file, moving a message, or accepting a meeting invitation.
+Execute a WorkIQ action via HTTP POST. Actions are named operations that perform a task (rather than creating a resource) — such as sending an email, copying a file, moving a message, accepting a meeting invitation, or computing free/busy availability across multiple calendars.
+
+> **⚠️ Write actions execute immediately.** `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`, and similar verbs take effect right away and are visible to other people or unrecoverable. **Before invoking, summarize the action (recipients, subject, body, target ID) and get the user's explicit confirmation.** Do not auto-send drafts or auto-respond to meeting invites without confirmation.
 
 ## Parameters
 
@@ -15,9 +17,12 @@ Execute a WorkIQ action via HTTP POST. Actions are named operations that perform
 - Accepting, declining, or tentatively accepting a meeting invitation
 - Copying or moving a message to another folder
 - Forwarding a message
+- Replying to a message
+- Computing free/busy availability for multiple users (`getSchedule`)
+- Initiating a large file upload session (`createUploadSession`)
 - Subscribing to change notifications
 
-Distinguish from `create_entity_work_iq`: use `do_action_work_iq` for verbs (send, copy, move, accept) rather than creating a new stored resource.
+Distinguish from `create_entity_work_iq`: use `do_action_work_iq` for verbs (send, copy, move, accept, reply, getSchedule) rather than creating a new stored resource. If an operation has a function-like name (`getSchedule`, `findMeetingTimes`) but takes a JSON body, it's still an action — POST it through this tool.
 
 ## Examples
 
@@ -81,3 +86,23 @@ Distinguish from `create_entity_work_iq`: use `do_action_work_iq` for verbs (sen
   "jsonBody": "{\"comment\":\"Thanks for the update!\"}"
 }
 ```
+
+### Get free/busy availability for multiple users (`getSchedule`)
+```json
+{
+  "actionUrl": "/me/calendar/getSchedule",
+  "jsonBody": "{\"schedules\":[\"adelev@contoso.com\",\"meganb@contoso.com\"],\"startTime\":{\"dateTime\":\"2024-06-03T09:00:00\",\"timeZone\":\"Pacific Standard Time\"},\"endTime\":{\"dateTime\":\"2024-06-03T18:00:00\",\"timeZone\":\"Pacific Standard Time\"},\"availabilityViewInterval\":60}"
+}
+```
+
+`availabilityViewInterval` is optional minutes (default 30, min 5, max 1440). `schedules` is a string array of SMTP addresses (users, distribution lists, rooms, or equipment).
+
+### Initiate a large file upload session
+```json
+{
+  "actionUrl": "/me/drive/root:/Projects/big-file.zip:/createUploadSession",
+  "jsonBody": "{\"item\":{\"@microsoft.graph.conflictBehavior\":\"replace\"}}"
+}
+```
+
+The response returns an `uploadUrl` you can PUT chunks to. Use this for files larger than 4MB (`upload_blob_work_iq`'s simple PUT limit).
