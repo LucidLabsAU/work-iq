@@ -15,7 +15,7 @@ Create a new WorkIQ entity by POSTing to a collection path. Use this to create c
 
 - Creating a new calendar event
 - Creating a draft email (use `do_action_work_iq` with `/me/sendMail` to send immediately)
-- Creating a new task in To Do or Planner
+- Creating a new Planner task
 - Creating a new Teams channel message
 - Any time you need to POST a new item to a collection
 
@@ -43,10 +43,10 @@ Create a new WorkIQ entity by POSTing to a collection path. Use this to create c
 }
 ```
 
-### Create a To Do task
+### Create a Planner task
 ```json
 {
-  "parentUrl": "/me/todo/lists/{listId}/tasks",
-  "jsonBody": "{\"title\":\"Review pull request\",\"dueDateTime\":{\"dateTime\":\"2024-06-05T17:00:00\",\"timeZone\":\"UTC\"}}"
+  "parentUrl": "/planner/tasks",
+  "jsonBody": "{\"planId\":\"{planId}\",\"title\":\"Update client list\"}"
 }
 ```
