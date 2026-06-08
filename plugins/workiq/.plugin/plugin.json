@@ -1,0 +1,6 @@
+{
+  "skills": "./skills/",
+  "version": "1.0.0",
+  "description": "Query Microsoft 365 data with natural language — emails, meetings, documents, Teams messages, and more.",
+  "name": "workiq"
+}
