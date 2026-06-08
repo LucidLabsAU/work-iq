@@ -1,0 +1,164 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Microsoft Work IQ",
+    "identifier": "did:web:microsoft.github.io:work-iq",
+    "documentationUrl": "https://github.com/microsoft/work-iq"
+  },
+  "entries": [
+    {
+      "identifier": "urn:aice:microsoft.com:plugins:workiq",
+      "displayName": "workiq",
+      "mediaType": "application/ai-catalog+json",
+      "data": {
+        "specVersion": "1.0",
+        "entries": [
+          {
+            "identifier": "urn:aice:microsoft.com:skills:workiq",
+            "displayName": "workiq",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq/skills/workiq/SKILL.md"
+          }
+        ]
+      },
+      "version": "1.0.0",
+      "description": "Query Microsoft 365 data with natural language \u2014 emails, meetings, documents, Teams messages, and more.",
+      "publisher": {
+        "identifier": "did:web:microsoft.github.io:work-iq",
+        "displayName": "Microsoft"
+      }
+    },
+    {
+      "identifier": "urn:aice:microsoft.com:plugins:workiq-preview",
+      "displayName": "workiq-preview",
+      "mediaType": "application/ai-catalog+json",
+      "data": {
+        "specVersion": "1.0",
+        "entries": [
+          {
+            "identifier": "urn:aice:microsoft.com:skills:workiq-preview",
+            "displayName": "workiq-preview",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-preview/skills/workiq-preview/SKILL.md"
+          }
+        ]
+      },
+      "version": "0.5.0",
+      "description": "Preview build: full WorkIQ tool surface \u2014 agentic queries via ask_work_iq plus direct reads and writes (create, update, delete, send, upload) across emails, meetings, calendar, documents, Teams, OneDrive, and SharePoint.",
+      "publisher": {
+        "identifier": "did:web:microsoft.github.io:work-iq",
+        "displayName": "Microsoft"
+      }
+    },
+    {
+      "identifier": "urn:aice:microsoft.com:microsoft-365-agents-toolkit",
+      "displayName": "microsoft-365-agents-toolkit",
+      "mediaType": "application/ai-catalog+json",
+      "data": {
+        "specVersion": "1.0",
+        "entries": [
+          {
+            "identifier": "urn:aice:microsoft.com:microsoft-365-agents-toolkit:install-atk",
+            "displayName": "install-atk",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/microsoft-365-agents-toolkit/skills/install-atk/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:microsoft-365-agents-toolkit:declarative-agent-developer",
+            "displayName": "declarative-agent-developer",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/microsoft-365-agents-toolkit/skills/declarative-agent-developer/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:microsoft-365-agents-toolkit:ui-widget-developer",
+            "displayName": "ui-widget-developer",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/microsoft-365-agents-toolkit/skills/ui-widget-developer/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:microsoft-365-agents-toolkit:m365-agent-evaluator",
+            "displayName": "m365-agent-evaluator",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/microsoft-365-agents-toolkit/skills/m365-agent-evaluator/SKILL.md"
+          }
+        ]
+      },
+      "version": "1.3.1",
+      "description": "Toolkit for building and evaluating Microsoft 365 Copilot declarative agents \u2014 scaffolding, JSON manifest development, capability configuration, and eval workflows.",
+      "publisher": {
+        "identifier": "did:web:microsoft.github.io:work-iq",
+        "displayName": "Microsoft"
+      }
+    },
+    {
+      "identifier": "urn:aice:microsoft.com:workiq-productivity",
+      "displayName": "workiq-productivity",
+      "mediaType": "application/ai-catalog+json",
+      "data": {
+        "specVersion": "1.0",
+        "entries": [
+          {
+            "identifier": "urn:aice:microsoft.com:workiq-productivity:action-item-extractor",
+            "displayName": "action-item-extractor",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-productivity/skills/action-item-extractor/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:workiq-productivity:daily-outlook-triage",
+            "displayName": "daily-outlook-triage",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-productivity/skills/daily-outlook-triage/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:workiq-productivity:email-analytics",
+            "displayName": "email-analytics",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-productivity/skills/email-analytics/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:workiq-productivity:meeting-cost-calculator",
+            "displayName": "meeting-cost-calculator",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-productivity/skills/meeting-cost-calculator/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:workiq-productivity:org-chart",
+            "displayName": "org-chart",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-productivity/skills/org-chart/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:workiq-productivity:multi-plan-search",
+            "displayName": "multi-plan-search",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-productivity/skills/multi-plan-search/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:workiq-productivity:site-explorer",
+            "displayName": "site-explorer",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-productivity/skills/site-explorer/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:workiq-productivity:channel-audit",
+            "displayName": "channel-audit",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-productivity/skills/channel-audit/SKILL.md"
+          },
+          {
+            "identifier": "urn:aice:microsoft.com:workiq-productivity:channel-digest",
+            "displayName": "channel-digest",
+            "mediaType": "text/markdown; profile=ai-skill",
+            "url": "./plugins/workiq-productivity/skills/channel-digest/SKILL.md"
+          }
+        ]
+      },
+      "version": "1.0.0",
+      "description": "WorkIQ productivity skills powered by the local WorkIQ CLI \u2014 read-only insights across email, meetings, calendar, Teams, SharePoint, projects, and people.",
+      "publisher": {
+        "identifier": "did:web:microsoft.github.io:work-iq",
+        "displayName": "Microsoft"
+      }
+    }
+  ]
+}
