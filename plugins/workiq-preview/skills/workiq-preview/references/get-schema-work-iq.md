@@ -1,4 +1,4 @@
-# get_schema_work_iq
+# get_schema
 
 Retrieve the OpenAPI schema for a WorkIQ API path or operation. Use this to understand what fields are available on an entity, what parameters a query accepts, and what body shape is required for create/update operations.
 
@@ -15,8 +15,8 @@ Retrieve the OpenAPI schema for a WorkIQ API path or operation. Use this to unde
 
 ## When to Use
 
-- Before calling `create_entity_work_iq` or `update_entity_work_iq` to understand the required body shape
-- When `fetch_work_iq` returns unfamiliar fields and you want to understand their meaning
+- Before calling `create_entity` or `update_entity` to understand the required body shape
+- When `fetch` returns unfamiliar fields and you want to understand their meaning
 - When you need to know what OData query parameters (`$filter`, `$select`, `$orderby`) are supported
 - To check if a `beta` endpoint has fields not available in `v1.0`
 

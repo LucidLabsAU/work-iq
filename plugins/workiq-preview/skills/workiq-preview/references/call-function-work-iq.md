@@ -1,8 +1,8 @@
-# call_function_work_iq
+# call_function
 
 Call an OData function via HTTP GET. Functions are **side-effect-free** named operations that return computed results — for example, `delta` (change tracking on a collection) or `reminderView` (computed list of upcoming reminders).
 
-**Use this tool only for true GET-shaped OData functions.** If the operation is invoked with a request body (e.g. `getSchedule`, `findMeetingTimes`, `sendMail`), it's an **action**, not a function — use `do_action_work_iq` instead, even when the path looks function-like.
+**Use this tool only for true GET-shaped OData functions.** If the operation is invoked with a request body (e.g. `getSchedule`, `findMeetingTimes`, `sendMail`), it's an **action**, not a function — use `do_action` instead, even when the path looks function-like.
 
 ## Parameters
 
@@ -15,7 +15,7 @@ Call an OData function via HTTP GET. Functions are **side-effect-free** named op
 - When you need a computed result that takes no request body (`delta`, `reminderView`)
 - Any time the OData path uses function call syntax `functionName(param=value)` and the operation is documented as GET
 
-If you're not sure whether something is a function or an action, run `get_schema_work_iq` on the path with `httpMethod: "get"` first. If no GET schema is returned but POST is, route to `do_action_work_iq`.
+If you're not sure whether something is a function or an action, run `get_schema` on the path with `httpMethod: "get"` first. If no GET schema is returned but POST is, route to `do_action`.
 
 ## Examples
 

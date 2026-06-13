@@ -1,4 +1,4 @@
-# ask_work_iq
+# ask
 
 Query Microsoft 365 Copilot for workplace intelligence using natural language. This is the primary tool for all M365 data questions — it grounds answers in real organizational data via Microsoft Graph.
 
@@ -8,18 +8,18 @@ Query Microsoft 365 Copilot for workplace intelligence using natural language. T
 |-----------|------|----------|-------------|
 | `question` | string | Yes | A natural language question. Be specific about people, topics, or timeframes for better results. |
 | `fileUrls` | string[] | No | Optional list of OneDrive or SharePoint file URLs to use as context for the question. |
-| `conversationId` | string | No | Optional conversation ID from a prior `ask_work_iq` response to continue an existing conversation. |
+| `conversationId` | string | No | Optional conversation ID from a prior `ask` response to continue an existing conversation. |
 | `agentId` | string | No | Optional agent ID to target a specific M365 Copilot agent. Defaults to bizchat. Use `list_agents` to discover available agent IDs. |
 
 ## When to Use
 
-Use `ask_work_iq` when:
+Use `ask` when:
 - You need information that exists somewhere in M365 (emails, meetings, documents, Teams, Calendar, people)
 - The user asks about what someone said, shared, or communicated
 - You need organizational context before implementing something
 - Any question that could be answered by Outlook, Teams, SharePoint, OneDrive, or Calendar
 
-Prefer `ask_work_iq` over entity tools when the question is open-ended or exploratory. Switch to entity tools when you need precise, structured data or need to write/modify data.
+Prefer `ask` over entity tools when the question is open-ended or exploratory. Switch to entity tools when you need precise, structured data or need to write/modify data.
 
 ## Examples
 

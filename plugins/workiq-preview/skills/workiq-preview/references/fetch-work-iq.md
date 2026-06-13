@@ -1,6 +1,6 @@
-# fetch_work_iq
+# fetch
 
-Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, structured retrieval of M365 data when `ask_work_iq` isn't specific enough — for example, to get a list of items with specific fields, apply filters, or read a single entity by ID.
+Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, structured retrieval of M365 data when `ask` isn't specific enough — for example, to get a list of items with specific fields, apply filters, or read a single entity by ID.
 
 ## Parameters
 
@@ -15,7 +15,7 @@ Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, 
 - When you already have an entity ID and want its full details
 - For multi-fetch: pass multiple URLs to retrieve several entities in one call
 
-Prefer `ask_work_iq` for open-ended questions. Use `fetch_work_iq` when you need precise, filtered, or structured data.
+Prefer `ask` for open-ended questions. Use `fetch` when you need precise, filtered, or structured data.
 
 ## URL Format
 

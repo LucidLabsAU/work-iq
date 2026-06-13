@@ -1,4 +1,4 @@
-# fetch_blob_work_iq
+# fetch_blob
 
 Download binary content from a WorkIQ path. Use this for file content, email attachments, document downloads, and any other binary resource from Microsoft 365.
 
@@ -14,7 +14,7 @@ Download binary content from a WorkIQ path. Use this for file content, email att
 - Retrieving an email attachment
 - Downloading exported content
 
-Distinguish from `fetch_work_iq`: use `fetch_blob_work_iq` when the path returns binary content (files, raw attachment bytes). Use `fetch_work_iq` when the path returns JSON.
+Distinguish from `fetch`: use `fetch_blob` when the path returns binary content (files, raw attachment bytes). Use `fetch` when the path returns JSON.
 
 ## Path Conventions
 
@@ -26,8 +26,8 @@ Distinguish from `fetch_work_iq`: use `fetch_blob_work_iq` when the path returns
 
 ## Workflow
 
-1. Use `fetch_work_iq` to list items and retrieve their IDs (e.g., `/me/drive/root/children`)
-2. Use `fetch_blob_work_iq` with the content path to download the binary data
+1. Use `fetch` to list items and retrieve their IDs (e.g., `/me/drive/root/children`)
+2. Use `fetch_blob` with the content path to download the binary data
 
 ## Examples
 

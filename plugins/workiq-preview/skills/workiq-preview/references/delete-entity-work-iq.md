@@ -1,4 +1,4 @@
-# delete_entity_work_iq
+# delete_entity
 
 Delete a WorkIQ entity via HTTP DELETE. This is a permanent operation — use with care, especially for emails and calendar events.
 
@@ -17,14 +17,14 @@ Delete a WorkIQ entity via HTTP DELETE. This is a permanent operation — use wi
 
 ## Gotchas
 
-- **Email deletion moves to Deleted Items**, it does not permanently delete. To permanently delete, use `do_action_work_iq` with `/me/messages/{id}/permanentDelete`.
+- **Email deletion moves to Deleted Items**, it does not permanently delete. To permanently delete, use `do_action` with `/me/messages/{id}/permanentDelete`.
 - **Calendar event deletion** removes it from the calendar and sends cancellation notices to attendees if it was an organized meeting.
-- Always confirm the entity ID with `fetch_work_iq` before deleting to avoid removing the wrong item.
+- Always confirm the entity ID with `fetch` before deleting to avoid removing the wrong item.
 
 ## Workflow
 
-1. Use `fetch_work_iq` to confirm you have the correct entity and its ID
-2. Call `delete_entity_work_iq` with the entity's full path including ID
+1. Use `fetch` to confirm you have the correct entity and its ID
+2. Call `delete_entity` with the entity's full path including ID
 
 ## Examples
 

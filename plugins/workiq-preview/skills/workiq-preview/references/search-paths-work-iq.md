@@ -1,4 +1,4 @@
-# search_paths_work_iq
+# search_paths
 
 Discover available WorkIQ API paths by searching with a regex filter. Use this as the first step when you need to work with entity tools but aren't sure what paths are available for a given resource type.
 
@@ -11,15 +11,15 @@ Discover available WorkIQ API paths by searching with a regex filter. Use this a
 
 ## When to Use
 
-- Before using `fetch_work_iq`, `create_entity_work_iq`, or other entity tools when you're unsure of the exact path
+- Before using `fetch`, `create_entity`, or other entity tools when you're unsure of the exact path
 - To discover what data is accessible for a given concept (e.g., "what calendar-related paths exist?")
 - To explore the SharePoint REST or Dataverse backends
 
 ## Recommended Workflow
 
-1. Call `search_paths_work_iq` with a broad filter to find candidate paths
-2. Call `get_schema_work_iq` on the path you want to use to understand its fields and parameters
-3. Call `fetch_work_iq` or the appropriate write tool with the confirmed path
+1. Call `search_paths` with a broad filter to find candidate paths
+2. Call `get_schema` on the path you want to use to understand its fields and parameters
+3. Call `fetch` or the appropriate write tool with the confirmed path
 
 ## Examples
 

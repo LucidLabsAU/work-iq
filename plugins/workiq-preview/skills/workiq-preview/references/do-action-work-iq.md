@@ -1,4 +1,4 @@
-# do_action_work_iq
+# do_action
 
 Execute a WorkIQ action via HTTP POST. Actions are named operations that perform a task (rather than creating a resource) — such as sending an email, copying a file, moving a message, accepting a meeting invitation, or computing free/busy availability across multiple calendars.
 
@@ -22,7 +22,7 @@ Execute a WorkIQ action via HTTP POST. Actions are named operations that perform
 - Initiating a large file upload session (`createUploadSession`)
 - Subscribing to change notifications
 
-Distinguish from `create_entity_work_iq`: use `do_action_work_iq` for verbs (send, copy, move, accept, reply, getSchedule) rather than creating a new stored resource. If an operation has a function-like name (`getSchedule`, `findMeetingTimes`) but takes a JSON body, it's still an action — POST it through this tool.
+Distinguish from `create_entity`: use `do_action` for verbs (send, copy, move, accept, reply, getSchedule) rather than creating a new stored resource. If an operation has a function-like name (`getSchedule`, `findMeetingTimes`) but takes a JSON body, it's still an action — POST it through this tool.
 
 ## Examples
 
@@ -105,4 +105,4 @@ Distinguish from `create_entity_work_iq`: use `do_action_work_iq` for verbs (sen
 }
 ```
 
-The response returns an `uploadUrl` you can PUT chunks to. Use this for files larger than 4MB (`upload_blob_work_iq`'s simple PUT limit).
+The response returns an `uploadUrl` you can PUT chunks to. Use this for files larger than 4MB (`upload_blob`'s simple PUT limit).
