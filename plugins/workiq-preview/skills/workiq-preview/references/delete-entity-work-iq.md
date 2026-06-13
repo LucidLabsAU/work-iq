@@ -12,7 +12,7 @@ Delete a WorkIQ entity via HTTP DELETE. This is a permanent operation — use wi
 
 - Deleting a calendar event
 - Deleting a draft email
-- Removing a task from To Do or Planner
+- Removing a Planner task
 - Deleting a Teams message (where permitted)
 
 ## Gotchas
@@ -36,11 +36,6 @@ Delete a WorkIQ entity via HTTP DELETE. This is a permanent operation — use wi
 ### Delete a draft email
 ```json
 { "entityUrl": "/me/messages/{id}" }
-```
-
-### Delete a To Do task
-```json
-{ "entityUrl": "/me/todo/lists/{listId}/tasks/{taskId}" }
 ```
 
 ### Delete a Planner task

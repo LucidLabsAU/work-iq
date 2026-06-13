@@ -41,19 +41,19 @@ Update an existing WorkIQ entity via HTTP PATCH. Only the fields you include in 
 }
 ```
 
-### Update a To Do task's due date
+### Update a Planner task's due date
 ```json
 {
-  "entityUrl": "/me/todo/lists/{listId}/tasks/{taskId}",
-  "jsonBody": "{\"dueDateTime\":{\"dateTime\":\"2024-06-10T17:00:00\",\"timeZone\":\"UTC\"}}"
+  "entityUrl": "/planner/tasks/{taskId}",
+  "jsonBody": "{\"dueDateTime\":\"2024-06-10T17:00:00Z\"}"
 }
 ```
 
-### Mark a task as complete
+### Mark a Planner task as complete
 ```json
 {
-  "entityUrl": "/me/todo/lists/{listId}/tasks/{taskId}",
-  "jsonBody": "{\"status\":\"completed\"}"
+  "entityUrl": "/planner/tasks/{taskId}",
+  "jsonBody": "{\"percentComplete\":100}"
 }
 ```
 
