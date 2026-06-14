@@ -1,4 +1,4 @@
-# upload_blob_work_iq
+# upload_blob
 
 Upload a local file to a WorkIQ path via HTTP PUT. Use this to upload files to OneDrive or SharePoint.
 
@@ -26,7 +26,7 @@ Upload a local file to a WorkIQ path via HTTP PUT. Use this to upload files to O
 
 ## Gotchas
 
-- **File size limit**: Simple PUT uploads via this tool work for files up to 4MB. For larger files, initiate an upload session via `do_action_work_iq` with `actionUrl: "/me/drive/root:/{path}:/createUploadSession"` and PUT chunks to the returned `uploadUrl`. See the `createUploadSession` example in `do-action-work-iq.md`.
+- **File size limit**: Simple PUT uploads via this tool work for files up to 4MB. For larger files, initiate an upload session via `do_action` with `actionUrl: "/me/drive/root:/{path}:/createUploadSession"` and PUT chunks to the returned `uploadUrl`. See the `createUploadSession` example in `do-action-work-iq.md`.
 - The URL uses the Graph path-based format `root:/{path}:/content` — include the leading `/` before the filename.
 
 ## Examples

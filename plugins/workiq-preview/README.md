@@ -1,6 +1,6 @@
 # Work IQ Plugin — Preview
 
-> **Preview build.** Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask_work_iq` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
+> **Preview build.** Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
 
 ## Installation
 
@@ -46,7 +46,7 @@ workiq version
 
 The preview plugin exposes the full WorkIQ tool surface — read **and** write — via 11 MCP tools.
 
-### Semantic queries (`ask_work_iq`)
+### Semantic queries (`ask`)
 
 ```
 "What did John say about the proposal?"
@@ -56,7 +56,7 @@ The preview plugin exposes the full WorkIQ tool surface — read **and** write �
 "Who is working on Project Alpha?"
 ```
 
-### Structured reads (`fetch_work_iq`, `search_paths_work_iq`, `get_schema_work_iq`, `fetch_blob_work_iq`)
+### Structured reads (`fetch`, `search_paths`, `get_schema`, `fetch_blob`)
 
 ```
 "List my unread emails from Sarah this week"
@@ -67,7 +67,7 @@ The preview plugin exposes the full WorkIQ tool surface — read **and** write �
 "Download the latest PowerPoint from my OneDrive 'Specs' folder"
 ```
 
-### Writes (`create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `upload_blob_work_iq`)
+### Writes (`create_entity`, `update_entity`, `delete_entity`, `do_action`, `upload_blob`)
 
 > ⚠️ Writes execute immediately and are visible to other people or unrecoverable. The skill is instructed to confirm with you before sending mail, forwarding, accepting/declining meetings, or permanently deleting.
 
@@ -90,7 +90,7 @@ Some operations are not exposed as MCP tools and must be run as shell commands �
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask_work_iq` for semantic questions plus entity tools for fast, structured M365 reads and writes |
+| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Guides usage of the full WorkIQ tool surface — `ask` for semantic questions plus entity tools for fast, structured M365 reads and writes |
 
 ## Platform Support
 

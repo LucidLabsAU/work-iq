@@ -61,15 +61,15 @@ copilot plugin install workiq@microsoft
 
 ## Tool name not found
 
-**Symptom:** A call to `ask_work_iq`, `fetch_work_iq`, etc. fails with "tool does not exist" or similar.
+**Symptom:** A call to `ask`, `fetch`, etc. fails with "tool does not exist" or similar.
 
 **Cause:** Your MCP host exposes the tool under a prefixed name derived from the **MCP server name** (`workiq-preview`), not the logical name documented in the skill.
 
-**Fix:** Scan your available-tools list for an entry whose name **ends with** the logical name (e.g., `ask_work_iq`). In Copilot CLI the prefixed form is `workiq-preview-ask_work_iq`; in Claude Desktop it's `mcp__workiq-preview__ask_work_iq`. Call the exact prefixed name your host requires.
+**Fix:** Scan your available-tools list for an entry whose name **ends with** the logical name (e.g., `ask`). In Copilot CLI the prefixed form is `workiq-preview-ask`; in Claude Desktop it's `mcp__workiq-preview__ask`. Call the exact prefixed name your host requires.
 
 ## Entity tool returns "not enabled" or "experimental feature disabled"
 
-**Symptom:** Calls to `search_paths_work_iq`, `fetch_work_iq`, `get_schema_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `fetch_blob_work_iq`, or `upload_blob_work_iq` fail with an error indicating the feature is not enabled or is experimental.
+**Symptom:** Calls to `search_paths`, `fetch`, `get_schema`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `fetch_blob`, or `upload_blob` fail with an error indicating the feature is not enabled or is experimental.
 
 **Cause:** Entity tools are gated behind an experimental flag in the WorkIQ CLI configuration.
 
@@ -90,13 +90,13 @@ After enabling, retry the original tool call.
 **Fix / how to proceed:**
 
 1. Check the request itself first — URL format rules (server-relative path, URL-encoded query values), `jsonBody` string encoding, and that the path/ID is real (no `{id}` literals, no guessed IDs). Fix and retry **once**.
-2. If a multi-URL `fetch_work_iq` failed, retry the URLs individually — one bad URL can fail the batch.
+2. If a multi-URL `fetch` failed, retry the URLs individually — one bad URL can fail the batch.
 3. If it still fails, **stop retrying**. Do not probe many path variants, other backends, or alternative APIs hunting for a way around it.
 4. **Report it honestly:** tell the user which call failed and that the server returned no diagnostic detail. You may suggest possible causes (missing Graph scopes — see the 403 entry below for `workiq auth consent`; unsupported path) only as explicitly unconfirmed hypotheses. **Never state a specific status code or error ("403", "AccessDenied", "Insufficient privileges") that you did not actually observe in a tool response.**
 
-## `search_paths_work_iq` fails with "internal error" on `sharepoint-rest` / `dataverse`
+## `search_paths` fails with "internal error" on `sharepoint-rest` / `dataverse`
 
-**Symptom:** `search_paths_work_iq` with `backend: "sharepoint-rest"` or `backend: "dataverse"` fails with "An internal error occurred while searching paths."
+**Symptom:** `search_paths` with `backend: "sharepoint-rest"` or `backend: "dataverse"` fails with "An internal error occurred while searching paths."
 
 **Cause:** Non-default backends may be unavailable in your environment. They are never needed for core M365 data — mail, calendar, contacts, tasks, people, Teams, and files all live in the default `graph-v1` backend.
 
@@ -104,7 +104,7 @@ After enabling, retry the original tool call.
 
 ## Entity tool returns a 400 / "bad request" on a Graph URL
 
-**Symptom:** `fetch_work_iq` or another entity tool returns HTTP 400 with a parser or validation error.
+**Symptom:** `fetch` or another entity tool returns HTTP 400 with a parser or validation error.
 
 **Cause:** URL formatting violates the entity tool URL rules.
 
@@ -115,17 +115,17 @@ After enabling, retry the original tool call.
 
 See the **URL Format Rules** section of `SKILL.md` for full examples.
 
-## `ask_work_iq` is slow or appears to hang
+## `ask` is slow or appears to hang
 
-**Symptom:** A single call to `ask_work_iq` takes anywhere from 10 seconds to a few minutes.
+**Symptom:** A single call to `ask` takes anywhere from 10 seconds to a few minutes.
 
-**Cause:** Expected behavior. `ask_work_iq` is agentic — it performs multiple backend searches internally. Typical calls run 10–60 seconds; broad questions take longer.
+**Cause:** Expected behavior. `ask` is agentic — it performs multiple backend searches internally. Typical calls run 10–60 seconds; broad questions take longer.
 
-**Fix:** If you only need a literal list, filter, or known entity, use `fetch_work_iq` (or another entity tool) instead. Entity tools typically return in under a second.
+**Fix:** If you only need a literal list, filter, or known entity, use `fetch` (or another entity tool) instead. Entity tools typically return in under a second.
 
-## `ask_work_iq` times out around 300 seconds
+## `ask` times out around 300 seconds
 
-**Symptom:** `ask_work_iq` fails with a timeout after ~300 seconds, or repeatedly hits the request time limit on complex questions.
+**Symptom:** `ask` fails with a timeout after ~300 seconds, or repeatedly hits the request time limit on complex questions.
 
 **Cause:** The question is too broad and forces the WorkIQ agent to perform too many internal operations within a single call (e.g., "summarize everything everyone said about every project this month").
 
@@ -155,7 +155,7 @@ Then retry the failing tool call or run `workiq auth consent` again.
 
 ## HTTP 403 Forbidden on an entity tool call
 
-**Symptom:** `fetch_work_iq`, `do_action_work_iq`, or another entity tool returns `HTTP 403 Forbidden` for a Graph path (e.g., `/me/calendars`, `/me/events`, `/me/messages`).
+**Symptom:** `fetch`, `do_action`, or another entity tool returns `HTTP 403 Forbidden` for a Graph path (e.g., `/me/calendars`, `/me/events`, `/me/messages`).
 
 **Cause:** The current user (or app) has not yet consented to the Microsoft Graph permission scopes needed for that path. By default, WorkIQ only requests a minimal set of scopes; additional scopes must be granted explicitly.
 

@@ -15,18 +15,18 @@ WorkIQ connects AI agents to Microsoft 365 Copilot, providing access to workplac
 
 | User Question Pattern | Example | Action |
 |-----------------------|---------|--------|
-| What someone said/shared/communicated | "What did Rob say about X?" | `ask_work_iq` |
-| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `ask_work_iq` |
-| Meeting content/decisions/action items | "What was decided in yesterday's meeting?" | `ask_work_iq` |
-| Email content or conversations | "Any emails from John about the deadline?" | `ask_work_iq` |
-| Teams messages or chats | "What did the team discuss about the release?" | `ask_work_iq` |
-| Document locations or content | "Where is the design doc?" | `ask_work_iq` |
-| Colleague expertise or ownership | "Who owns the billing system?" | `ask_work_iq` |
-| Calendar/schedule information | "What meetings do I have today?" | `ask_work_iq` |
-| Organizational context | "What are the team's Q1 goals?" | `ask_work_iq` |
-| Project status or updates | "What's the status of Project X?" | `ask_work_iq` |
-| Team activities or work | "What is the team working on?" | `ask_work_iq` |
-| Any workplace/work-related context | "Any updates I should know about?" | `ask_work_iq` |
+| What someone said/shared/communicated | "What did Rob say about X?" | `ask` |
+| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `ask` |
+| Meeting content/decisions/action items | "What was decided in yesterday's meeting?" | `ask` |
+| Email content or conversations | "Any emails from John about the deadline?" | `ask` |
+| Teams messages or chats | "What did the team discuss about the release?" | `ask` |
+| Document locations or content | "Where is the design doc?" | `ask` |
+| Colleague expertise or ownership | "Who owns the billing system?" | `ask` |
+| Calendar/schedule information | "What meetings do I have today?" | `ask` |
+| Organizational context | "What are the team's Q1 goals?" | `ask` |
+| Project status or updates | "What's the status of Project X?" | `ask` |
+| Team activities or work | "What is the team working on?" | `ask` |
+| Any workplace/work-related context | "Any updates I should know about?" | `ask` |
 
 **DO NOT say "I don't have access to emails/meetings/messages"** - use WorkIQ instead!
 
@@ -38,11 +38,11 @@ Authentication is automatic with the connected user's credentials.
 
 ## MCP Tool
 
-Use the `ask_work_iq` MCP tool to query Microsoft 365 Copilot. The tool accepts a single `question` parameter.
+Use the `ask` MCP tool to query Microsoft 365 Copilot. The tool accepts a single `question` parameter.
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "<your question>" }` |
+| `ask` | `{ "question": "<your question>" }` |
 
 ## Quick Start
 
@@ -50,7 +50,7 @@ Query M365 Copilot using the MCP tool:
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "Who is the expert on TypeSpec?" }` |
+| `ask` | `{ "question": "Who is the expert on TypeSpec?" }` |
 
 ## Common Use Cases
 
@@ -58,50 +58,50 @@ Query M365 Copilot using the MCP tool:
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "What are the latest top of mind from Rob I should be aware of?" }` |
-| `ask_work_iq` | `{ "question": "What has Sarah been focused on lately?" }` |
-| `ask_work_iq` | `{ "question": "What did John share about the project?" }` |
-| `ask_work_iq` | `{ "question": "What concerns has my manager raised recently?" }` |
+| `ask` | `{ "question": "What are the latest top of mind from Rob I should be aware of?" }` |
+| `ask` | `{ "question": "What has Sarah been focused on lately?" }` |
+| `ask` | `{ "question": "What did John share about the project?" }` |
+| `ask` | `{ "question": "What concerns has my manager raised recently?" }` |
 
 ### Find Experts and People
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "Who is the expert on authentication in our team?" }` |
-| `ask_work_iq` | `{ "question": "Who should I talk to about the billing system?" }` |
-| `ask_work_iq` | `{ "question": "Who worked on the checkout feature?" }` |
+| `ask` | `{ "question": "Who is the expert on authentication in our team?" }` |
+| `ask` | `{ "question": "Who should I talk to about the billing system?" }` |
+| `ask` | `{ "question": "Who worked on the checkout feature?" }` |
 
 ### Retrieve Meeting Context
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "What decisions were made in my meeting last week about the new feature?" }` |
-| `ask_work_iq` | `{ "question": "Summarize the architecture discussion from yesterday's standup" }` |
-| `ask_work_iq` | `{ "question": "What action items came out of the sprint planning?" }` |
+| `ask` | `{ "question": "What decisions were made in my meeting last week about the new feature?" }` |
+| `ask` | `{ "question": "Summarize the architecture discussion from yesterday's standup" }` |
+| `ask` | `{ "question": "What action items came out of the sprint planning?" }` |
 
 ### Find Emails and Messages
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "Any recent emails from Rob about the deadline?" }` |
-| `ask_work_iq` | `{ "question": "What did the team discuss in Teams about the release?" }` |
-| `ask_work_iq` | `{ "question": "Summarize my unread messages from today" }` |
+| `ask` | `{ "question": "Any recent emails from Rob about the deadline?" }` |
+| `ask` | `{ "question": "What did the team discuss in Teams about the release?" }` |
+| `ask` | `{ "question": "Summarize my unread messages from today" }` |
 
 ### Locate Documents and Specs
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "Find the design doc for the authentication system" }` |
-| `ask_work_iq` | `{ "question": "What's the latest spec for Project X?" }` |
-| `ask_work_iq` | `{ "question": "Where is the API documentation for the payments service?" }` |
+| `ask` | `{ "question": "Find the design doc for the authentication system" }` |
+| `ask` | `{ "question": "What's the latest spec for Project X?" }` |
+| `ask` | `{ "question": "Where is the API documentation for the payments service?" }` |
 
 ### Understand Priorities
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "Based on discussions with my manager, what are my top priorities?" }` |
-| `ask_work_iq` | `{ "question": "What are the team's goals for this quarter?" }` |
-| `ask_work_iq` | `{ "question": "What's blocking the release?" }` |
+| `ask` | `{ "question": "Based on discussions with my manager, what are my top priorities?" }` |
+| `ask` | `{ "question": "What are the team's goals for this quarter?" }` |
+| `ask` | `{ "question": "What's blocking the release?" }` |
 
 ### Ground Implementation in Context
 
@@ -109,13 +109,13 @@ When implementing features, use WorkIQ to ground your work in organizational kno
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "Based on the latest spec for Project X, what are the backend requirements?" }` |
+| `ask` | `{ "question": "Based on the latest spec for Project X, what are the backend requirements?" }` |
 
 Then implement based on the response.
 
 ## MCP Tool Reference
 
-### ask_work_iq
+### ask
 
 Query Microsoft 365 Copilot for workplace intelligence.
 
@@ -127,4 +127,4 @@ Query Microsoft 365 Copilot for workplace intelligence.
 
 | Tool | Parameters |
 |------|------------|
-| `ask_work_iq` | `{ "question": "Who is my manager?" }` |
+| `ask` | `{ "question": "Who is my manager?" }` |

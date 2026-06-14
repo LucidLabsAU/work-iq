@@ -1,6 +1,6 @@
-# fetch_work_iq
+# fetch
 
-Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, structured retrieval of M365 data when `ask_work_iq` isn't specific enough — for example, to get a list of items with specific fields, apply filters, or read a single entity by ID.
+Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, structured retrieval of M365 data when `ask` isn't specific enough — for example, to get a list of items with specific fields, apply filters, or read a single entity by ID.
 
 ## Parameters
 
@@ -15,10 +15,10 @@ Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, 
 - When you already have an entity ID and want its full details
 - For multi-fetch: pass multiple URLs to retrieve several entities in one call
 
-Prefer `ask_work_iq` for open-ended questions. Use `fetch_work_iq` when you need precise, filtered, or structured data.
+Prefer `ask` for open-ended questions. Use `fetch` when you need precise, filtered, or structured data.
 
-> **⚠️ Not for delta queries.** Calling `/.../delta` or `/.../delta()` through `fetch_work_iq`
-> fails — delta is an OData **function** and must go through `call_function_work_iq`. See
+> **⚠️ Not for delta queries.** Calling `/.../delta` or `/.../delta()` through `fetch`
+> fails — delta is an OData **function** and must go through `call_function`. See
 > `references/call-function-work-iq.md`.
 
 ## Multi-fetch caveats
@@ -34,7 +34,7 @@ Prefer `ask_work_iq` for open-ended questions. Use `fetch_work_iq` when you need
 Collection responses are **pages**, not the full result set. When a response contains
 `@odata.nextLink`, more results exist:
 
-- To get the next page, call `fetch_work_iq` again with the `@odata.nextLink` value converted to
+- To get the next page, call `fetch` again with the `@odata.nextLink` value converted to
   a server-relative path (strip the scheme/authority/version prefix, keep the path and query
   string — including the opaque `$skiptoken`).
 - **Do not paginate with `$skip`** — many collections (notably `/me/calendarView`) do not

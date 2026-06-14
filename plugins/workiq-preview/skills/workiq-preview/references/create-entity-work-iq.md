@@ -1,4 +1,4 @@
-# create_entity_work_iq
+# create_entity
 
 Create a new WorkIQ entity by POSTing to a collection path. Use this to create calendar events, draft emails, tasks, Teams messages, and other M365 resources.
 
@@ -9,20 +9,20 @@ Create a new WorkIQ entity by POSTing to a collection path. Use this to create c
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `parentUrl` | string | Yes | The parent collection path to POST to (e.g., `/me/events`, `/me/messages`). Do not include an ID — this creates a new item. Must be relative to the domain root — start with `/`, do not include a scheme or authority (`https://graph.microsoft.com` ❌, `/me/events` ✅). URL-encode any special characters in path segments. |
-| `jsonBody` | string | Yes | JSON-encoded string with the fields for the new entity. Use `get_schema_work_iq` on the path with `httpMethod: "post"` first if unsure of required fields. |
+| `jsonBody` | string | Yes | JSON-encoded string with the fields for the new entity. Use `get_schema` on the path with `httpMethod: "post"` first if unsure of required fields. |
 
 ## When to Use
 
 - Creating a new calendar event
-- Creating a draft email (use `do_action_work_iq` with `/me/sendMail` to send immediately)
-- Creating a new task in To Do or Planner
+- Creating a draft email (use `do_action` with `/me/sendMail` to send immediately)
+- Creating a new Planner task
 - Creating a new Teams channel message
 - Any time you need to POST a new item to a collection
 
 ## Workflow
 
-1. Call `get_schema_work_iq` with the collection URL and `httpMethod: "post"` to confirm required fields
-2. Call `create_entity_work_iq` with the collection URL and a valid body
+1. Call `get_schema` with the collection URL and `httpMethod: "post"` to confirm required fields
+2. Call `create_entity` with the collection URL and a valid body
 3. Save the returned `id` if you need to reference or update the entity later
 
 ## Examples
@@ -43,10 +43,10 @@ Create a new WorkIQ entity by POSTing to a collection path. Use this to create c
 }
 ```
 
-### Create a To Do task
+### Create a Planner task
 ```json
 {
-  "parentUrl": "/me/todo/lists/{listId}/tasks",
-  "jsonBody": "{\"title\":\"Review pull request\",\"dueDateTime\":{\"dateTime\":\"2024-06-05T17:00:00\",\"timeZone\":\"UTC\"}}"
+  "parentUrl": "/planner/tasks",
+  "jsonBody": "{\"planId\":\"{planId}\",\"title\":\"Update client list\"}"
 }
 ```

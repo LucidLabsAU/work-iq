@@ -1,6 +1,6 @@
 ---
 name: workiq-preview
-description: Preview build of WorkIQ — the full Microsoft 365 tool surface - agentic semantic queries via ask_work_iq PLUS direct, structured reads and writes for emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people. USE THIS SKILL for ANY workplace question or write action where the data lives in Microsoft 365. Read triggers, "what did [person] say", "what are [person]'s priorities", "top of mind from [person]", "what was discussed", "find emails about", "what meetings do I have", "what documents", "who is working on", "what's the status of", "any updates on", "what's new/changed since". Write triggers, "send email", "reply to [thread]", "forward to", "create a calendar event", "schedule a meeting", "accept/decline the meeting", "mark as read", "delete the draft", "add a task", "remind me to", "mark the task done", "show my to-do list", "send a Teams chat/message", "post in the [channel/chat]", "reply in Teams", "react to the message", "set my presence", "upload to OneDrive", "download attachment". Discovery/schema triggers, "which endpoints/paths exist", "what fields are required/updatable", "what does the API/request body expect", "what parameters does [operation] take", "describe the data model". When in doubt about workplace context, try WorkIQ first.
+description: Preview build of WorkIQ — the full Microsoft 365 tool surface - agentic semantic queries via ask PLUS direct, structured reads and writes for emails, meetings, calendar, documents, Teams messages, Planner plans/tasks, OneDrive/SharePoint files, and people. USE THIS SKILL for ANY workplace question or write action where the data lives in Microsoft 365. Read triggers, "what did [person] say", "what are [person]'s priorities", "top of mind from [person]", "what was discussed", "find emails about", "what planner tasks are due", "what meetings do I have", "what documents", "who is working on", "what's the status of", "any updates on", "what's new/changed since". Write triggers, "send email", "reply to [thread]", "forward to", "create a calendar event", "schedule a meeting", "accept/decline the meeting", "mark as read", "delete the draft", "add a task", "remind me to", "mark the task done", "show my planner tasks", "send a Teams chat/message", "post in the [channel/chat]", "reply in Teams", "react to the message", "set my presence", "upload to OneDrive", "download attachment". Discovery/schema triggers, "which endpoints/paths exist", "what fields are required/updatable", "what does the API/request body expect", "what parameters does [operation] take", "describe the data model". When in doubt about workplace context, try WorkIQ first.
 compatibility: >
   Requires Node.js 18+ and npm (provides `npx`, used to launch the
   @microsoft/workiq MCP server). If missing, see
@@ -9,17 +9,17 @@ compatibility: >
 
 # WorkIQ
 
-WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask_work_iq` tool for semantic questions, the fast **entity tools** for direct structured access to M365 data (`fetch_work_iq`, `create_entity_work_iq`, `update_entity_work_iq`, `delete_entity_work_iq`, `do_action_work_iq`, `call_function_work_iq`, `search_paths_work_iq`, `get_schema_work_iq`, `fetch_blob_work_iq`, `upload_blob_work_iq`), and the **WorkIQ CLI commands** used for one-time setup and configuration (auth login/logout, granting additional permission scopes, viewing or changing config, checking the installed version).
+WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask` tool for semantic questions, the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`, `fetch_blob`, `upload_blob`), and the **WorkIQ CLI commands** used for one-time setup and configuration (auth login/logout, granting additional permission scopes, viewing or changing config, checking the installed version).
 
 ## 🛑 STOP — Read This Before Your First Tool Call
 
-The tools in this skill are documented by their **logical names** (`ask_work_iq`, `fetch_work_iq`, etc.), but your MCP host almost certainly exposes them under a **prefixed** name.
+The tools in this skill are documented by their **logical names** (`ask`, `fetch`, etc.), but your MCP host almost certainly exposes them under a **prefixed** name.
 
 **The MCP server is named `workiq-preview`. Tool prefixes are derived from the MCP server name — never from the name of this skill or its containing folder.**
 
 ❌ **DO NOT** derive a prefix from this skill's name or folder.
-❌ **DO NOT** call `ask_work_iq` verbatim and assume it will work.
-✅ **DO** scan your available tools list for an entry whose name **ends with** `ask_work_iq` and call that exact name. In Copilot CLI this will be `workiq-preview-ask_work_iq`.
+❌ **DO NOT** call `ask` verbatim and assume it will work.
+✅ **DO** scan your available tools list for an entry whose name **ends with** `ask` and call that exact name. In Copilot CLI this will be `workiq-preview-ask`.
 
 See [Resolving tool names in your host](#resolving-tool-names-in-your-host) below for the full resolution algorithm. If you skip this step, your first tool call will fail with "tool does not exist."
 
@@ -29,42 +29,42 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 
 **USE WorkIQ for ANY workplace-related question.** If the answer might exist in Microsoft 365 data, try WorkIQ first.
 
-**Choosing the right tool:** Use `ask_work_iq` when the question requires **semantic understanding, synthesis, or reasoning** across M365 data ("what did someone say", "what's the status", "summarize"). Use `fetch_work_iq` (or another entity tool) when the question is a **literal lookup of structured data** with a known shape ("list my meetings on Monday", "show me unread emails from X"). Entity tools return in under a second; `ask_work_iq` typically takes 10–60 seconds per call and broad questions can run several minutes.
+**Choosing the right tool:** Use `ask` when the question requires **semantic understanding, synthesis, or reasoning** across M365 data ("what did someone say", "what's the status", "summarize"). Use `fetch` (or another entity tool) when the question is a **literal lookup of structured data** with a known shape ("list my meetings on Monday", "show me unread emails from X"). Entity tools return in under a second; `ask` typically takes 10–60 seconds per call and broad questions can run several minutes.
 
 **ALWAYS use WorkIQ when the user asks about:**
 
 | User Question Pattern | Example | Action |
 |-----------------------|---------|--------|
-| What someone said/shared/communicated | "What did Rob say about the API design?" | `ask_work_iq` |
-| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `ask_work_iq` |
-| Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `ask_work_iq` |
-| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `ask_work_iq` |
-| Synthesizing Teams chat activity | "What's the team's take on the release?" | `ask_work_iq` |
-| Finding documents by topic | "Where is the design doc for Project X?" | `ask_work_iq` |
-| Colleague expertise or ownership | "Who owns the billing system?" | `ask_work_iq` |
-| Organizational context / goals | "What are the team's Q1 goals?" | `ask_work_iq` |
-| Project status or updates | "What's the status of Project X?" | `ask_work_iq` |
-| Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `ask_work_iq` |
-| Listing meetings on a known date/range | "What meetings do I have Monday?" | `fetch_work_iq` (`/me/calendarView`) |
-| Listing emails with concrete filters | "Show my unread emails from Rob this week" | `fetch_work_iq` (`/me/messages`) |
-| Listing Teams chats / channels / members | "List the channels in the DevX team" | `fetch_work_iq` |
+| What someone said/shared/communicated | "What did Rob say about the API design?" | `ask` |
+| Someone's priorities/concerns/focus | "What's top of mind for Sarah?" | `ask` |
+| Meeting content/decisions/action items | "What was decided in yesterday's standup?" | `ask` |
+| Summarizing email threads or conversations | "Summarize the deadline thread with John" | `ask` |
+| Synthesizing Teams chat activity | "What's the team's take on the release?" | `ask` |
+| Finding documents by topic | "Where is the design doc for Project X?" | `ask` |
+| Colleague expertise or ownership | "Who owns the billing system?" | `ask` |
+| Organizational context / goals | "What are the team's Q1 goals?" | `ask` |
+| Project status or updates | "What's the status of Project X?" | `ask` |
+| Open-ended "any updates" / catch-up questions | "Any updates I should know about?" | `ask` |
+| Listing meetings on a known date/range | "What meetings do I have Monday?" | `fetch` (`/me/calendarView`) |
+| Listing emails with concrete filters | "Show my unread emails from Rob this week" | `fetch` (`/me/messages`) |
+| Listing Teams chats / channels / members | "List the channels in the DevX team" | `fetch` |
 | Sending/replying/reacting in Teams, setting presence | "Send a chat to Alex", "Post in the Daily channel", "React with 👍", "Set me to Busy" | entity tools on `/chats/...` or `/teams/...` — see `references/teams-work-iq.md` |
-| Fetching a known entity by ID | "Get event `AAMk...` details" | `fetch_work_iq` |
-| Listing files in a OneDrive/SharePoint folder | "List files in my OneDrive 'Specs' folder" | `fetch_work_iq` |
-| Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch_work_iq` |
-| Listing / creating / completing tasks & to-dos | "Add a task to follow up with finance", "Mark my task done", "Show my to-do lists" | entity tools on `/me/todo/...` or `/planner/...` — see `references/tasks-work-iq.md` |
-| Org chart / direct reports / manager lookup | "Who are Rob's direct reports?" | `fetch_work_iq` (`/users/{id}/directReports`) |
-| What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function_work_iq` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`). **Never call delta via `fetch_work_iq`** — see `references/call-function-work-iq.md` |
-| Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action_work_iq` |
-| Creating a calendar event, draft, or task | "Create a calendar event Friday at 3pm" | `create_entity_work_iq` |
+| Fetching a known entity by ID | "Get event `AAMk...` details" | `fetch` |
+| Listing files in a OneDrive/SharePoint folder | "List files in my OneDrive 'Specs' folder" | `fetch` |
+| Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` |
+| Listing / creating / completing Planner tasks | "Add a task to follow up with finance", "Mark my task done", "List my Planner tasks" | entity tools on `/planner/...` — see `references/tasks-work-iq.md` |
+| Org chart / direct reports / manager lookup | "Who are Rob's direct reports?" | `fetch` (`/users/{id}/directReports`) |
+| What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`). **Never call delta via `fetch`** — see `references/call-function-work-iq.md` |
+| Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |
+| Creating a calendar event, draft, or task | "Create a calendar event Friday at 3pm" | `create_entity` |
 
 **DO NOT say "I don't have access to emails/meetings/messages"** - use WorkIQ instead!
 
-> **🛑 Tasks/to-dos are M365 data — never a local fallback.** "Add a task", "remind me to…",
-> "follow up with…", "mark … done", "my to-do list" all route to WorkIQ entity tools
-> (`/me/todo/...` for personal tasks, `/planner/...` for shared plans). **Do not** create a
-> local markdown todo file, insert into a local/SQL todo table, or use any other builtin
-> task tracker — that does not satisfy the request and the user cannot see it in Outlook/Planner.
+> **🛑 Tasks are M365 data — never a local fallback.** "Add a task", "remind me to…",
+> "follow up with…", "mark … done" all route to WorkIQ entity tools
+> (`/planner/...` for Planner tasks). **Do not** create a
+> local markdown file, insert into a local/SQL table, or use any other builtin
+> task tracker — that does not satisfy the request and the user cannot see it in Planner.
 > If a WorkIQ task call fails, report the failure; do not silently substitute local storage.
 > See `references/tasks-work-iq.md`.
 
@@ -108,21 +108,21 @@ For the full command reference and usage guidance, see `references/cli-commands.
 
 ## Resolving tool names in your host
 
-Throughout this skill (and its `references/*.md`), MCP tools are referred to by their **logical names** — for example `ask_work_iq`, `fetch_work_iq`, `search_paths_work_iq`, etc.
+Throughout this skill (and its `references/*.md`), MCP tools are referred to by their **logical names** — for example `ask`, `fetch`, `search_paths`, etc.
 
 > **⚠️ Common pitfall:** Tool prefixes come from the **MCP server name** (`workiq-preview`) — never from the name of this skill or its containing folder. Do not construct a prefix from the skill name.
 
-Your MCP host may expose these tools under a **prefixed or transformed name**, depending on its naming convention. For example, the same `ask_work_iq` tool may appear in your available-tools list as any of:
+Your MCP host may expose these tools under a **prefixed or transformed name**, depending on its naming convention. For example, the same `ask` tool may appear in your available-tools list as any of:
 
-- `ask_work_iq` (no prefix)
-- `workiq-preview-ask_work_iq` (Copilot CLI style — `<server>-<tool>`)
-- `mcp__workiq-preview__ask_work_iq` (Claude Desktop style — `mcp__<server>__<tool>`)
-- `workiq-preview.ask_work_iq` or `workiq-preview:ask_work_iq` (dotted/colon variants)
+- `ask` (no prefix)
+- `workiq-preview-ask` (Copilot CLI style — `<server>-<tool>`)
+- `mcp__workiq-preview__ask` (Claude Desktop style — `mcp__<server>__<tool>`)
+- `workiq-preview.ask` or `workiq-preview:ask` (dotted/colon variants)
 - Other host-specific prefixes or separators
 
 **Before invoking any tool referenced in this skill:**
 
-1. Scan your available tools list for an entry whose name **ends with** (or equals) the logical name from this doc (e.g., `ask_work_iq`).
+1. Scan your available tools list for an entry whose name **ends with** (or equals) the logical name from this doc (e.g., `ask`).
 2. If multiple candidates match, prefer the one whose prefix identifies the WorkIQ **MCP server** (always `workiq-preview` for this skill).
 3. Call the tool using whatever exact name your host requires — do not assume the unprefixed form will work, and do not derive the prefix from this skill's name or folder.
 
@@ -130,7 +130,7 @@ If you call the logical name verbatim and get a "tool does not exist" error, thi
 
 ## MCP Tools
 
-### `ask_work_iq` — Agentic natural language M365 queries
+### `ask` — Agentic natural language M365 queries
 
 The primary tool. Ask any workplace question in plain English. This is an **agentic tool** — it orchestrates multi-step operations internally (searching emails, meetings, Teams chats, documents, people) to answer complex questions. Use it when you need intelligence, synthesis, or semantic understanding across M365 data.
 
@@ -159,10 +159,10 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 
 | Scenario | Use |
 |----------|-----|
-| Open-ended question, semantic search, synthesis | `ask_work_iq` (slow but smart) |
+| Open-ended question, semantic search, synthesis | `ask` (slow but smart) |
 | Fetch a known list, apply a filter, get structured data | entity tools (fast but literal) |
 
-**Recommended workflow:** for **well-known paths, go direct** — call the read/write tool immediately (use the cheat sheet below). Only fall back to `search_paths_work_iq` → `get_schema_work_iq` → tool when the path is genuinely unknown or a write body shape is unfamiliar. Do **not** reflexively run `search_paths`/`get_schema` before every common operation.
+**Recommended workflow:** for **well-known paths, go direct** — call the read/write tool immediately (use the cheat sheet below). Only fall back to `search_paths` → `get_schema` → tool when the path is genuinely unknown or a write body shape is unfamiliar. Do **not** reflexively run `search_paths`/`get_schema` before every common operation.
 
 ### 🗺️ Known paths — go direct, skip discovery
 
@@ -170,19 +170,18 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 |----------|-----------|-----------|
 | Mail | `/me/messages`, `/me/mailFolders` | list/get/create draft/update/delete; send via `/me/sendMail`, reply/forward/move via `/me/messages/{id}/{action}` |
 | Calendar | `/me/events`, `/me/calendarView` | list/get/create/update/delete; accept/decline via `/me/events/{id}/{action}` |
-| To Do | `/me/todo/lists`, `/me/todo/lists/{listId}/tasks` | list/create/update/complete/delete — see `references/tasks-work-iq.md` |
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete — see `references/tasks-work-iq.md` |
 | Teams | `/me/chats`, `/chats/{chatId}/messages`, `/me/joinedTeams`, `/teams/{teamId}/channels/{channelId}/messages`, `/me/presence` | chats vs channels are different surfaces — see `references/teams-work-iq.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/contacts` | profile, org, contacts — see directory-vs-contacts warning below |
 | Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | list/get; download via `fetch_blob`, upload via `upload_blob` |
-| Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta` | "what's new/changed since" — via `call_function_work_iq` only, never `fetch_work_iq` |
+| Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta` | "what's new/changed since" — via `call_function` only, never `fetch` |
 
 ### ⚠️ Directory users and personal contacts are different stores
 
 `/users/{id}` (the org directory / AAD) and `/me/contacts/{id}` (the user's personal Outlook
 contacts) are **separate entity types with incompatible IDs**:
 
-- A person found via directory search, people search, or `ask_work_iq` is usually a **directory
+- A person found via directory search, people search, or `ask` is usually a **directory
   user** — their ID will **not** work in `/me/contacts/{id}`, and you cannot PATCH personal
   fields like `businessPhones` onto `/users/{id}` (directory writes are admin-only).
 - "Create/update/delete a contact" means a **personal contact** under `/me/contacts` — resolve
@@ -195,7 +194,7 @@ contacts) are **separate entity types with incompatible IDs**:
 
 When the user asks about a Graph **schema, payload, parameters, fields, or which endpoints exist**
 ("what does sendMail take?", "which fields are updatable?", "what endpoints handle email?"),
-answer with `get_schema_work_iq` / `search_paths_work_iq`. **Do not** answer from the builtin
+answer with `get_schema` / `search_paths`. **Do not** answer from the builtin
 `web_fetch` against public docs — those calls produce no MCP evidence and are treated as not
 answering the question. Resolve the WorkIQ tool name (see above) and call the MCP tool.
 
@@ -203,8 +202,8 @@ answering the question. Resolve the WorkIQ tool name (see above) and call the MC
 
 To act on a named entity ("the X email", "my Y task", "the Z draft"):
 
-1. Resolve it with **one** `fetch_work_iq` (filter by subject/title/displayName).
-2. If the first fetch misses, try **one** `ask_work_iq` to locate it semantically.
+1. Resolve it with **one** `fetch` (filter by subject/title/displayName).
+2. If the first fetch misses, try **one** `ask` to locate it semantically.
 3. If still not found, **stop and report "not found"** — do **not** fire 10+ more
    `fetch`/`search_paths`/`ask` calls hunting for it.
 4. Once you have the id, call the mutation (`update_entity` / `delete_entity` / `do_action`)
@@ -230,7 +229,7 @@ All URL parameters (`entityUrls`, `parentUrl`, `entityUrl`, `actionUrl`, `functi
 
 ### ⚠️ `jsonBody` Format Rules (write tools)
 
-`create_entity_work_iq`, `update_entity_work_iq`, `do_action_work_iq`, and `call_function_work_iq` accept a `jsonBody` parameter. **`jsonBody` is a string** containing JSON, **not** a JSON object — the value must be a JSON-encoded string with quotes escaped.
+`create_entity`, `update_entity`, `do_action`, and `call_function` accept a `jsonBody` parameter. **`jsonBody` is a string** containing JSON, **not** a JSON object — the value must be a JSON-encoded string with quotes escaped.
 
 - ❌ `"jsonBody": { "subject": "Hello" }` — object, rejected by schema
 - ❌ `"jsonBody": "{"subject":"Hello"}"` — broken quoting
@@ -240,24 +239,24 @@ If a write tool returns a schema error mentioning `jsonBody` type, this is almos
 
 ### ⚠️ Placeholders in examples are not literals
 
-Reference examples use `{id}`, `{listId}`, `{teamId}`, `{taskId}`, `{driveId}`, `{messageId}`, etc. as placeholders for IDs you obtained from a prior call. **Do not call a URL with `{id}` literal in it** — replace it with the actual ID first (typically from `fetch_work_iq` or `create_entity_work_iq`). A literal `/me/messages/{id}` will return 404 / "resource not found".
+Reference examples use `{id}`, `{listId}`, `{teamId}`, `{taskId}`, `{driveId}`, `{messageId}`, etc. as placeholders for IDs you obtained from a prior call. **Do not call a URL with `{id}` literal in it** — replace it with the actual ID first (typically from `fetch` or `create_entity`). A literal `/me/messages/{id}` will return 404 / "resource not found".
 
 ### ⚠️ Write actions execute immediately — confirm with the user first
 
-`do_action_work_iq` (especially `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`) and write-side `create_entity_work_iq` / `update_entity_work_iq` / `delete_entity_work_iq` calls take effect immediately and are visible to other people (recipients, meeting organizers) or unrecoverable. **Before invoking any write tool, summarize what you're about to do and get the user's confirmation.** This is especially important for sendMail, forward, decline, and permanentDelete.
+`do_action` (especially `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`) and write-side `create_entity` / `update_entity` / `delete_entity` calls take effect immediately and are visible to other people (recipients, meeting organizers) or unrecoverable. **Before invoking any write tool, summarize what you're about to do and get the user's confirmation.** This is especially important for sendMail, forward, decline, and permanentDelete.
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `search_paths_work_iq` | Discover available API paths | `filter` (regex), `backend` |
-| `get_schema_work_iq` | Inspect fields and body shape for a path | `path`, `httpMethod`, `apiVersion` |
-| `fetch_work_iq` | Fetch entities by path (GET) | `entityUrls[]` — supports OData (`$filter`, `$select`, `$top`) |
-| `call_function_work_iq` | Call named OData functions — GET-shaped, side-effect-free, parenthesised inline params (e.g. `delta`, `reminderView`) | `functionUrl` with inline function params |
-| `create_entity_work_iq` | Create a new entity (POST to collection) | `parentUrl`, `jsonBody` |
-| `update_entity_work_iq` | Update fields on an existing entity (PATCH) | `entityUrl` with ID, `jsonBody` |
-| `delete_entity_work_iq` | Delete an entity (DELETE) | `entityUrl` with ID |
-| `do_action_work_iq` | Execute an action — send, copy, move, accept (POST) | `actionUrl`, `jsonBody` (optional) |
-| `fetch_blob_work_iq` | Download binary content (files, attachments) | `blobUrl` |
-| `upload_blob_work_iq` | Upload a local file (PUT) | `targetUrl`, `filePath` |
+| `search_paths` | Discover available API paths | `filter` (regex), `backend` |
+| `get_schema` | Inspect fields and body shape for a path | `path`, `httpMethod`, `apiVersion` |
+| `fetch` | Fetch entities by path (GET) | `entityUrls[]` — supports OData (`$filter`, `$select`, `$top`) |
+| `call_function` | Call named OData functions — GET-shaped, side-effect-free, parenthesised inline params (e.g. `delta`, `reminderView`) | `functionUrl` with inline function params |
+| `create_entity` | Create a new entity (POST to collection) | `parentUrl`, `jsonBody` |
+| `update_entity` | Update fields on an existing entity (PATCH) | `entityUrl` with ID, `jsonBody` |
+| `delete_entity` | Delete an entity (DELETE) | `entityUrl` with ID |
+| `do_action` | Execute an action — send, copy, move, accept (POST) | `actionUrl`, `jsonBody` (optional) |
+| `fetch_blob` | Download binary content (files, attachments) | `blobUrl` |
+| `upload_blob` | Upload a local file (PUT) | `targetUrl`, `filePath` |
 
 Read the relevant reference file for full parameter details and examples:
 
@@ -266,7 +265,7 @@ Read the relevant reference file for full parameter details and examples:
 - `references/fetch-work-iq.md` — if you need to fetch structured or filtered M365 data
 - `references/call-function-work-iq.md` — if the path uses OData function call syntax (e.g., `reminderView(...)`, `delta`)
 - `references/create-entity-work-iq.md` — if you need to create a new calendar event, email draft, task, etc.
-- `references/tasks-work-iq.md` — if you need to list, create, update, complete, or delete Microsoft To Do / Planner tasks and lists
+- `references/tasks-work-iq.md` — if you need to list, create, update, complete, or delete Planner tasks
 - `references/teams-work-iq.md` — if you need to send, reply, react, or read Teams chat/channel messages, or get/set presence
 - `references/update-entity-work-iq.md` — if you need to update fields on an existing entity
 - `references/delete-entity-work-iq.md` — if you need to delete an entity

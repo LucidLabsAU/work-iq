@@ -1,8 +1,8 @@
-# call_function_work_iq
+# call_function
 
 Call an OData function via HTTP GET. Functions are **side-effect-free** named operations that return computed results — for example, `delta` (change tracking on a collection) or `reminderView` (computed list of upcoming reminders).
 
-**Use this tool only for true GET-shaped OData functions.** If the operation is invoked with a request body (e.g. `getSchedule`, `findMeetingTimes`, `sendMail`), it's an **action**, not a function — use `do_action_work_iq` instead, even when the path looks function-like.
+**Use this tool only for true GET-shaped OData functions.** If the operation is invoked with a request body (e.g. `getSchedule`, `findMeetingTimes`, `sendMail`), it's an **action**, not a function — use `do_action` instead, even when the path looks function-like.
 
 ## Parameters
 
@@ -17,7 +17,7 @@ Call an OData function via HTTP GET. Functions are **side-effect-free** named op
 - **Any "what's new / what's changed / what was added or removed since X" question** — that is a
   delta query, and this tool is the only correct route for it
 
-If you're not sure whether something is a function or an action, run `get_schema_work_iq` on the path with `httpMethod: "get"` first. If no GET schema is returned but POST is, route to `do_action_work_iq`.
+If you're not sure whether something is a function or an action, run `get_schema` on the path with `httpMethod: "get"` first. If no GET schema is returned but POST is, route to `do_action`.
 
 ## Delta queries (change tracking)
 
@@ -25,7 +25,7 @@ Delta endpoints exist for mail (`/me/mailFolders/{id}/messages/delta`), calendar
 (`/me/calendarView/delta?startDateTime=...&endDateTime=...`), contacts (`/me/contacts/delta`),
 and more.
 
-- **Only via this tool.** Calling a delta path through `fetch_work_iq` fails. Do not approximate
+- **Only via this tool.** Calling a delta path through `fetch` fails. Do not approximate
   delta with `fetch` + a `lastModifiedDateTime` filter — that misses deletions and true change
   semantics.
 - **First sync:** call the delta path with no token. Page through `@odata.nextLink` responses

@@ -1,4 +1,4 @@
-# update_entity_work_iq
+# update_entity
 
 Update an existing WorkIQ entity via HTTP PATCH. Only the fields you include in the body are changed — other fields are left untouched.
 
@@ -6,7 +6,7 @@ Update an existing WorkIQ entity via HTTP PATCH. Only the fields you include in 
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `entityUrl` | string | Yes | The entity path including the item's ID (e.g., `/me/events/{id}`). Get the ID from a prior `fetch_work_iq` or `create_entity_work_iq` call. Must be relative to the domain root — start with `/`, do not include a scheme or authority (`https://graph.microsoft.com` ❌, `/me/events/{id}` ✅). URL-encode any special characters in path segments. |
+| `entityUrl` | string | Yes | The entity path including the item's ID (e.g., `/me/events/{id}`). Get the ID from a prior `fetch` or `create_entity` call. Must be relative to the domain root — start with `/`, do not include a scheme or authority (`https://graph.microsoft.com` ❌, `/me/events/{id}` ✅). URL-encode any special characters in path segments. |
 | `jsonBody` | string | Yes | JSON-encoded string containing only the fields to update. Omit fields you don't want to change. |
 
 ## When to Use
@@ -22,7 +22,7 @@ Update an existing WorkIQ entity via HTTP PATCH. Only the fields you include in 
 - **`entityUrl` must address exactly one entity by ID.** A collection or query URL
   (`/me/planner/tasks?$filter=startswith(title,'...')`) is rejected with
   "Write requests are only supported on contained entities" — resolve the ID with
-  `fetch_work_iq` first, then PATCH `/.../{id}`.
+  `fetch` first, then PATCH `/.../{id}`.
 - The ID must come from a real tool response for the **same entity type** — a directory user ID
   does not work on `/me/contacts/{id}`, and an ID scraped from a search-result URL is not an
   entity ID.
@@ -33,9 +33,9 @@ Update an existing WorkIQ entity via HTTP PATCH. Only the fields you include in 
 
 ## Workflow
 
-1. Obtain the entity's `id` from `fetch_work_iq` or `create_entity_work_iq`
-2. Optionally call `get_schema_work_iq` with `httpMethod: "patch"` to confirm which fields are updatable
-3. Call `update_entity_work_iq` with only the fields you want to change
+1. Obtain the entity's `id` from `fetch` or `create_entity`
+2. Optionally call `get_schema` with `httpMethod: "patch"` to confirm which fields are updatable
+3. Call `update_entity` with only the fields you want to change
 
 ## Examples
 
@@ -55,19 +55,19 @@ Update an existing WorkIQ entity via HTTP PATCH. Only the fields you include in 
 }
 ```
 
-### Update a To Do task's due date
+### Update a Planner task's due date
 ```json
 {
-  "entityUrl": "/me/todo/lists/{listId}/tasks/{taskId}",
-  "jsonBody": "{\"dueDateTime\":{\"dateTime\":\"2024-06-10T17:00:00\",\"timeZone\":\"UTC\"}}"
+  "entityUrl": "/planner/tasks/{taskId}",
+  "jsonBody": "{\"dueDateTime\":\"2024-06-10T17:00:00Z\"}"
 }
 ```
 
-### Mark a task as complete
+### Mark a Planner task as complete
 ```json
 {
-  "entityUrl": "/me/todo/lists/{listId}/tasks/{taskId}",
-  "jsonBody": "{\"status\":\"completed\"}"
+  "entityUrl": "/planner/tasks/{taskId}",
+  "jsonBody": "{\"percentComplete\":100}"
 }
 ```
 
