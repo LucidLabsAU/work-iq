@@ -17,17 +17,23 @@ Fetch one or more WorkIQ entities by path using HTTP GET. Use this for precise, 
 
 Prefer `ask` for open-ended questions. Use `fetch` when you need precise, filtered, or structured data.
 
+Use `fetch` (not `ask`) to resolve exact targets before mutations — find an event ID before deleting/updating, a draft before adding recipients or sending, a Teams chat/channel/message before editing/reacting/posting, a mail thread before reply/forward/move/mark-read.
+
+For exact reads ("show/list/get latest messages", "list members", "show my chats", "retrieve the event titled…"), prefer filtered `fetch` or a known function path. Do not answer from general knowledge, local SQL, or `ask` unless the prompt asks for synthesis.
+
 > **⚠️ Not for delta queries.** Calling `/.../delta` or `/.../delta()` through `fetch`
 > fails — delta is an OData **function** and must go through `call_function`. See
 > `references/call-function-work-iq.md`.
 
 ## Multi-fetch caveats
 
-- A single call accepts **at most 50** entity URLs.
 - The batch result can report an error when **any one** URL fails, even if the other URLs
   returned data. If a multi-fetch errors, don't discard it — check for successful payloads
   inside the response, and re-issue only the failing URL on its own to isolate the problem.
   When a URL might fail (permissions, existence unknown), prefer small batches or single URLs.
+- Large URL lists also stack per-URL latency into a single tool-call window and raise the
+  odds of one failure poisoning the batch. Prefer focused batches over speculative bulk
+  fetches.
 
 ## Pagination
 
@@ -71,13 +77,29 @@ Common URL encodings for OData query values:
 
 ## OData Query Tips
 
+**Always include `$select`** with only the fields you need to reduce response size (e.g., `/me/messages?$select=id,subject,from`). For collection endpoints, include `$top` to bound results.
+
 | Parameter | Purpose | Example |
 |-----------|---------|---------|
-| `$top` | Limit result count | `$top=10` |
+| `$top` | Limit result count (some APIs reject `$top` — e.g., `/me/chats/{id}/members`; omit it there) | `$top=10` |
 | `$filter` | Filter results | `$filter=isRead%20eq%20false` |
 | `$select` | Return only specified fields | `$select=subject,from,receivedDateTime` |
 | `$orderby` | Sort results | `$orderby=receivedDateTime%20desc` |
 | `$expand` | Include related entities inline | `$expand=attachments` |
+
+## Binary file content is not available
+
+This skill **cannot** download file bytes, attachment payloads, profile photo bytes, or any other binary content. There is no `fetch_blob` tool exposed.
+
+Do **not** call `fetch` against paths ending in `/content` or `$value` (e.g. `/me/drive/items/{id}/content`, `/me/messages/{id}/attachments/{id}/$value`) — `fetch` only returns JSON metadata envelopes, and it will not give you the raw bytes either.
+
+When the user asks for a file's content:
+
+1. Tell the user this skill cannot return the binary content directly.
+2. `fetch` the item's metadata (e.g. `/me/drive/items/{id}`) and return the `webUrl` so the user can open and download it in OneDrive / SharePoint / Outlook directly.
+3. For an attachment, return the parent message's `webLink` so the user can open it in Outlook.
+
+Never fabricate base64 content, `@odata.mediaContentType`, or an `@microsoft.graph.downloadUrl` value to satisfy the request.
 
 ## Examples
 

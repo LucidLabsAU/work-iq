@@ -9,7 +9,7 @@ compatibility: >
 
 # WorkIQ
 
-WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask` tool for semantic questions, the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`, `fetch_blob`, `upload_blob`), and the **WorkIQ CLI commands** used for one-time setup and configuration (auth login/logout, granting additional permission scopes, viewing or changing config, checking the installed version).
+WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask` tool for semantic questions, the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`), and the **WorkIQ CLI commands** used for one-time setup and configuration (auth login/logout, granting additional permission scopes, viewing or changing config, checking the installed version).
 
 ## 🛑 STOP — Read This Before Your First Tool Call
 
@@ -53,6 +53,9 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | Listing files in a OneDrive/SharePoint folder | "List files in my OneDrive 'Specs' folder" | `fetch` |
 | Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` |
 | Listing / creating / completing Planner tasks | "Add a task to follow up with finance", "Mark my task done", "List my Planner tasks" | entity tools on `/planner/...` — see `references/tasks-work-iq.md` |
+| List my To Do task lists | "Show me my to-do lists" | `fetch` (`/me/todo/lists`) — subject to server policy |
+| Get a personal contact by name | "Get the contact card for Morgan Avery" | `fetch` (`/me/contacts?$filter=...`) — subject to server policy |
+| List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`); writes subject to server policy |
 | Org chart / direct reports / manager lookup | "Who are Rob's direct reports?" | `fetch` (`/users/{id}/directReports`) |
 | What's new/changed/removed since a point in time | "What's new in my Inbox since this morning?", "What's changed on my calendar since yesterday?", "What's been added to my contacts recently?" | `call_function` (delta — `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta`). **Never call delta via `fetch`** — see `references/call-function-work-iq.md` |
 | Sending mail, accepting/declining meetings | "Send this draft", "Accept the 2pm meeting" | `do_action` |
@@ -67,6 +70,33 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 > task tracker — that does not satisfy the request and the user cannot see it in Planner.
 > If a WorkIQ task call fails, report the failure; do not silently substitute local storage.
 > See `references/tasks-work-iq.md`.
+
+### Required workflow order — don't stop after a preparatory lookup
+
+Follow the user's request through to completion. A discovery or read call **alone** does not satisfy a request that also asked you to act.
+
+1. **Path discovery** ("endpoint", "available operations", "what can I do with X") → `search_paths` first. Continue to the read/write tool if the prompt also asks to act.
+2. **Schema inspection** ("schema", "data model", "fields", "what does X take") → `get_schema` first. Continue to the write/action tool if the prompt also asks to act.
+3. **Exact entity read or mutation by title/name/channel/thread** → `fetch` to resolve the target's ID, then `update_entity` / `delete_entity` / `do_action`. Do not use `ask` to resolve exact titled events, messages, drafts, folders, Teams chats/channels, or threads.
+4. **Semantic summary/status/decisions** → `ask`. If the prompt then asks to draft, send, create, update, delete, forward, or react, continue with the mutation tool — the `ask` answer alone is incomplete.
+
+### Resolve-then-act — concrete examples
+
+When the user asks to delete, update, send, forward, copy, move, or react to something, you **must** call the write tool after resolving the entity. A final answer without the mutation is incomplete.
+
+| User request | Step 1: resolve | Step 2: act (required) |
+|---|---|---|
+| "Mark email as read" | `fetch` to find the message | `update_entity` `/me/messages/{id}` with `{"isRead": true}` |
+| "Forward email to X" | `fetch` to find the message | `do_action` `/me/messages/{id}/forward` |
+| "Send email to X" | — | `do_action` `/me/sendMail` |
+| "Copy file to folder" | `fetch` to find file and target folder | `do_action` `/me/drive/items/{id}/copy` |
+| "Set presence to busy" | — | `do_action` `/me/presence/setUserPreferredPresence` — see `references/teams-work-iq.md` |
+| "React to Teams message" | `fetch` to find the message | `do_action` `/teams/{teamId}/channels/{channelId}/messages/{messageId}/setReaction` |
+| "Delete" any entity | `fetch` to find it | `delete_entity` on the entity URL |
+| "Update/rename/change" any entity | `fetch` to find it | `update_entity` on the entity URL |
+| "Create draft and send" | `create_entity` to draft | `do_action` `/me/messages/{id}/send` |
+
+Common failure: fetching the entity and stopping, asking the user "did you want me to do anything else?", or saying "I found it." The user asked you to do something — finish it.
 
 **When in doubt, use WorkIQ.** It's better to query and get no results than to miss workplace context.
 
@@ -83,6 +113,18 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 >   tool response confirms it (2xx/created/updated). If you could not find the target or the
 >   write failed, say so — do not substitute a different action (e.g., sending a new email
 >   instead of replying) and report the original request as completed.
+
+### Grounding rules
+
+- **Discovery and schema answers come from tool results.** State only paths, operations, fields, required/writable properties, and parameters present in the `search_paths` or `get_schema` response. On partial evidence, say what was confirmed and what wasn't — do not fill gaps from general Graph knowledge.
+- **Be precise about tool outcomes.** Do not claim success, failure, existence, or a specific error unless the exact outcome is in the tool result. On null/empty/ambiguous results, say so.
+- **Call at least one WorkIQ tool before answering any M365 question.** Exceptions: non-workplace questions, or questions about this skill's docs.
+- **Honor paging.** If a response includes `@odata.nextLink`, do not present the first page as complete. Continue fetching when the user asks for all/every/complete, or say the answer is partial.
+
+### Don't substitute web search or CLI introspection
+
+- ❌ `web_fetch` / web search **as the first move** for Graph or M365. WorkIQ is the source of truth — call `get_schema` (for fields) or `search_paths` (for endpoints) first. `web_fetch` is a fallback **only after** WorkIQ returns no useful result.
+- ❌ `fetch_copilot_cli_documentation` for workplace questions — it describes the CLI itself, not M365. When the user says "these tools", "what's available", "what can I do" about mail/calendar/tasks/files/contacts/Teams/channels/chats/OneDrive/SharePoint, call `search_paths`.
 
 ## Prerequisites
 
@@ -168,13 +210,36 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 
 | Resource | Path root | Common ops |
 |----------|-----------|-----------|
-| Mail | `/me/messages`, `/me/mailFolders` | list/get/create draft/update/delete; send via `/me/sendMail`, reply/forward/move via `/me/messages/{id}/{action}` |
+| Mail | `/me/messages`, `/me/mailFolders` | list/get/create draft/update/delete; send via `/me/sendMail`, reply/forward/move via `/me/messages/{id}/{action}`; subject search via `$search` (not `$filter=contains`) — see `references/mail-work-iq.md` |
 | Calendar | `/me/events`, `/me/calendarView` | list/get/create/update/delete; accept/decline via `/me/events/{id}/{action}` |
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete — see `references/tasks-work-iq.md` |
 | Teams | `/me/chats`, `/chats/{chatId}/messages`, `/me/joinedTeams`, `/teams/{teamId}/channels/{channelId}/messages`, `/me/presence` | chats vs channels are different surfaces — see `references/teams-work-iq.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/contacts` | profile, org, contacts — see directory-vs-contacts warning below |
-| Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | list/get; download via `fetch_blob`, upload via `upload_blob` |
+| To Do | `/me/todo/lists`, `/me/todo/lists/{listId}/tasks` | list/create/update/delete — **commonly policy-denied**, see note below |
+| Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — writes commonly policy-denied |
+| Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | list/get JSON metadata only — binary content (file bytes, attachment payloads) is not released yet, see the deny rule below |
 | Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta` | "what's new/changed since" — via `call_function` only, never `fetch` |
+
+> **Server may deny families by policy.** Tenants can disable specific path families
+> server-side. If a call returns `Access denied for path: <X>`, the path isn't in the
+> tenant's allowlist — **do not retry, do not fall back to a different path, do not call `ask`
+> as a workaround.** Tell the user the path is policy-denied. As of the current preview,
+> `/me/todo/*`, `/me/contacts`, and writes on `/me/outlook/masterCategories` are commonly
+> affected — `search_paths` confirms what's exposed for the connected tenant.
+
+### 🛑 Binary file content is not yet released — `fetch_blob` and `upload_blob` are not callable today
+
+`fetch_blob` and `upload_blob` are documented for future reference, but **they are not part of the current preview MCP surface**. Attempting to call them returns `tool does not exist`. Do not call them, do not search for them in your tool list, do not invent them from a similar name (e.g. `download_file`, `get_blob`, `put_file`).
+
+**You cannot retrieve or send raw bytes through this preview build yet** — no file payload, no attachment payload, no profile photo bytes, no base64 blob, no inline binary content.
+
+When the user asks to download a file, upload a local file, get attachment content, or fetch a profile photo:
+
+1. **Confirm the request and tell the user this preview build does not support binary file content yet.**
+2. **Return the file's web URL** instead — `fetch` `/me/drive/items/{id}` (or the SharePoint equivalent) returns a `webUrl` the user can open in OneDrive / SharePoint / Outlook directly. For an attachment, return the parent message URL so the user can open it in Outlook.
+3. **Never fabricate binary content.** Do not invent a base64 string, an `@odata.mediaContentType`, or an `@microsoft.graph.downloadUrl` to satisfy the request. If the user needs the bytes, point them at the web URL — they will download from there.
+
+If the user explicitly asks "why can't you download it directly?" — say the binary-download and upload tools (`fetch_blob`, `upload_blob`) are not yet released in this WorkIQ preview build; the structured-metadata tools (`fetch`, `create_entity`, etc.) are the full available surface today.
 
 ### ⚠️ Directory users and personal contacts are different stores
 
@@ -190,13 +255,36 @@ contacts) are **separate entity types with incompatible IDs**:
 - If the person exists only in the directory and not in `/me/contacts`, say so — to update their
   details as a contact you must create a personal contact first.
 
-### 🛑 Schema/discovery questions stay on MCP — never `web_fetch`
+### 🛑 Schema/discovery questions stay on MCP — never `web_fetch` or CLI introspection
 
 When the user asks about a Graph **schema, payload, parameters, fields, or which endpoints exist**
 ("what does sendMail take?", "which fields are updatable?", "what endpoints handle email?"),
 answer with `get_schema` / `search_paths`. **Do not** answer from the builtin
-`web_fetch` against public docs — those calls produce no MCP evidence and are treated as not
-answering the question. Resolve the WorkIQ tool name (see above) and call the MCP tool.
+`web_fetch` against public docs or from `fetch_copilot_cli_documentation` — those calls produce no
+MCP evidence and are treated as not answering the question. Resolve the WorkIQ tool name (see
+above) and call the MCP tool.
+
+### Efficiency rules — minimize tool calls
+
+**Do not loop through `search_paths` / `get_schema` / `fetch` repeatedly.** Common anti-patterns:
+
+- ❌ Calling `search_paths` 3+ times for the same surface area.
+- ❌ Calling `get_schema` on paths you already know (contacts, messages, events, drive items).
+- ❌ Using `fetch` to "explore" when the path is already implied by context.
+- ❌ Falling back to dozens of `fetch` calls when `ask` fails — report the failure instead.
+
+**Do:** use the path patterns in this document to route directly to the correct tool in 1–2
+calls. If you need the entity ID first, one `fetch` to resolve, then one write tool call.
+
+### Missing information — use `fetch` to disambiguate, don't give up
+
+When the user's request is missing a required piece of information (e.g., "delete my draft" with
+no subject named, an empty title, or a generic "the meeting"):
+
+1. Use `fetch` to list the available options (e.g., `fetch` `/me/events`, `/me/messages`, `/me/mailFolders`).
+2. Ask the user to pick from the results.
+3. Do **not** silently abandon the request with zero tool calls.
+4. Do **not** proceed with a write operation using empty or invented data.
 
 ### 🔁 Resolve-then-act — do not loop searches
 
@@ -215,7 +303,7 @@ To act on a named entity ("the X email", "my Y task", "the Z draft"):
 
 ### ⚠️ URL Format Rules (ALL entity tools)
 
-All URL parameters (`entityUrls`, `parentUrl`, `entityUrl`, `actionUrl`, `functionUrl`, `blobUrl`, `targetUrl`) **must**:
+All URL parameters (`entityUrls`, `parentUrl`, `entityUrl`, `actionUrl`, `functionUrl`) **must**:
 
 1. **Server-relative path only** — start with `/` and **omit** any scheme, authority, or API-version prefix. Valid path roots include `/me/...`, `/users/...`, `/teams/...`, `/groups/...`, `/sites/...`, `/drives/...`, `/planner/...`, and others — anything Graph exposes.
    - ❌ `https://graph.microsoft.com/v1.0/me/messages`
@@ -227,15 +315,15 @@ All URL parameters (`entityUrls`, `parentUrl`, `entityUrl`, `actionUrl`, `functi
    - ✅ `$orderby=receivedDateTime%20desc`
    - **Exception:** OData property paths (the `/` separator between navigation properties, e.g. `start/dateTime`, `from/emailAddress/address`) are **not** encoded. The `/` only gets encoded when it appears inside a string literal value.
 
-### ⚠️ `jsonBody` Format Rules (write tools)
+### `jsonBody` Format Rules (write tools)
 
-`create_entity`, `update_entity`, `do_action`, and `call_function` accept a `jsonBody` parameter. **`jsonBody` is a string** containing JSON, **not** a JSON object — the value must be a JSON-encoded string with quotes escaped.
+`create_entity`, `update_entity`, `do_action`, and `call_function` accept a `jsonBody` parameter. **Both shapes are accepted** — a JSON object or a JSON-encoded string. Pick whichever your runtime makes easier; both produce the same result.
 
-- ❌ `"jsonBody": { "subject": "Hello" }` — object, rejected by schema
-- ❌ `"jsonBody": "{"subject":"Hello"}"` — broken quoting
+- ✅ `"jsonBody": { "subject": "Hello" }` — JSON object
 - ✅ `"jsonBody": "{\"subject\":\"Hello\"}"` — JSON-encoded string
+- ❌ `"jsonBody": "{"subject":"Hello"}"` — broken quoting (neither valid JSON nor a valid escaped string)
 
-If a write tool returns a schema error mentioning `jsonBody` type, this is almost certainly the cause. Re-serialize the body and retry.
+If a write tool returns a schema error mentioning `jsonBody` shape, check the JSON itself (mismatched braces, unescaped quotes inside the string form, wrong wrapper). Object form is the simplest to get right.
 
 ### ⚠️ Placeholders in examples are not literals
 
@@ -245,18 +333,39 @@ Reference examples use `{id}`, `{listId}`, `{teamId}`, `{taskId}`, `{driveId}`, 
 
 `do_action` (especially `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`) and write-side `create_entity` / `update_entity` / `delete_entity` calls take effect immediately and are visible to other people (recipients, meeting organizers) or unrecoverable. **Before invoking any write tool, summarize what you're about to do and get the user's confirmation.** This is especially important for sendMail, forward, decline, and permanentDelete.
 
+### "Draft", "compose", "prepare reply" requires a persisted draft
+
+When the user says "draft an email", "compose a reply", "prepare a response", or any variant
+asking the draft to *exist* (not just suggest wording), call `create_entity` to POST:
+
+- `/me/messages` for a fresh draft
+- `/me/messages/{id}/createReply`, `/createReplyAll`, or `/createForward` for replies/forwards
+  (these are `create_entity` POSTs, **not** `do_action`)
+
+Generating draft text inline does NOT satisfy the request — the user can't open it in Outlook.
+A common failure: call `ask` for the summary half of a "summarize then draft" chain and stop;
+the `create_entity` step is required.
+
+### Schema for action verbs
+
+Action verbs (camelCase verb at end of path: `/me/sendMail`, `/me/messages/{id}/forward`,
+`/me/events/{id}/accept`, `/decline`, `/copy`, `/move`, `/reply`, `/getSchedule`,
+`/findMeetingTimes`) — get the body schema via `get_schema` with `operationType: "action"`. Do
+**not** substitute a related entity's schema — the wrapper shape differs (`sendMail` →
+`{Message, SaveToSentItems}`, `copy` → `{destinationId}`, etc.).
+
+### Entity tool reference
+
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `search_paths` | Discover available API paths | `filter` (regex), `backend` |
-| `get_schema` | Inspect fields and body shape for a path | `path`, `httpMethod`, `apiVersion` |
+| `search_paths` | Discover available API paths | `filter` (regex, **required**) |
+| `get_schema` | Inspect fields and body shape for a path | `path`, `operationType` (`fetch`/`create`/`update`/`action`), `format` |
 | `fetch` | Fetch entities by path (GET) | `entityUrls[]` — supports OData (`$filter`, `$select`, `$top`) |
 | `call_function` | Call named OData functions — GET-shaped, side-effect-free, parenthesised inline params (e.g. `delta`, `reminderView`) | `functionUrl` with inline function params |
 | `create_entity` | Create a new entity (POST to collection) | `parentUrl`, `jsonBody` |
 | `update_entity` | Update fields on an existing entity (PATCH) | `entityUrl` with ID, `jsonBody` |
 | `delete_entity` | Delete an entity (DELETE) | `entityUrl` with ID |
 | `do_action` | Execute an action — send, copy, move, accept (POST) | `actionUrl`, `jsonBody` (optional) |
-| `fetch_blob` | Download binary content (files, attachments) | `blobUrl` |
-| `upload_blob` | Upload a local file (PUT) | `targetUrl`, `filePath` |
 
 Read the relevant reference file for full parameter details and examples:
 
@@ -265,12 +374,11 @@ Read the relevant reference file for full parameter details and examples:
 - `references/fetch-work-iq.md` — if you need to fetch structured or filtered M365 data
 - `references/call-function-work-iq.md` — if the path uses OData function call syntax (e.g., `reminderView(...)`, `delta`)
 - `references/create-entity-work-iq.md` — if you need to create a new calendar event, email draft, task, etc.
+- `references/mail-work-iq.md` — if you need to find, draft, send, reply, forward, move, or delete mail (covers `$search` vs `$filter` and the mail-delta endpoint)
 - `references/tasks-work-iq.md` — if you need to list, create, update, complete, or delete Planner tasks
 - `references/teams-work-iq.md` — if you need to send, reply, react, or read Teams chat/channel messages, or get/set presence
 - `references/update-entity-work-iq.md` — if you need to update fields on an existing entity
 - `references/delete-entity-work-iq.md` — if you need to delete an entity
 - `references/do-action-work-iq.md` — if you need to send mail, accept/decline meetings, copy/move messages
-- `references/fetch-blob-work-iq.md` — if you need to download a file or attachment
-- `references/upload-blob-work-iq.md` — if you need to upload a file to OneDrive or SharePoint
 - `references/troubleshooting.md` — if a tool call fails unexpectedly, returns an error, or behaves differently than documented
 - `references/cli-commands.md` — if you need to run WorkIQ CLI commands directly (auth, consent, config, version) outside the MCP server

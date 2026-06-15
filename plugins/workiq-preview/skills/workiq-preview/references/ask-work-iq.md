@@ -25,6 +25,13 @@ Use `ask` when:
 
 Prefer `ask` over entity tools when the question is open-ended or exploratory. Switch to entity tools when you need precise, structured data or need to write/modify data.
 
+## Do NOT use `ask` as a shortcut for:
+
+- **API / path questions** ("endpoint", "available operations", "what can I do with…") → `search_paths`
+- **Schema / field / body-shape questions** ("what does sendMail take?", "what fields are required?") → `get_schema`
+- **Exact mutations by title / name / thread / channel** ("delete the X event", "react to the Y message") → resolve with `fetch`, then call the write/action tool directly
+- **A "summarize then draft/send/create/update/delete/forward/react" chain** — continue with the mutation tool after `ask`. The `ask` answer alone does not satisfy the second half of the request.
+
 ## Examples
 
 ### People and expertise

@@ -1,30 +1,31 @@
 # do_action
 
-Execute a WorkIQ action via HTTP POST. Actions are named operations that perform a task (rather than creating a resource) — such as sending an email, copying a file, moving a message, accepting a meeting invitation, or computing free/busy availability across multiple calendars.
+POST a WorkIQ action — a named operation that performs a task (send mail, copy/move messages, accept/decline a meeting, compute free/busy) rather than creating a resource.
 
-> **⚠️ Write actions execute immediately.** `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`, and similar verbs take effect right away and are visible to other people or unrecoverable. **Before invoking, summarize the action (recipients, subject, body, target ID) and get the user's explicit confirmation.** Do not auto-send drafts or auto-respond to meeting invites without confirmation.
+> **📘 Action body shapes live here.** This file is the source of truth for action `jsonBody` shapes. You can also call `get_schema` with `operationType: "action"` to retrieve the schema directly.
+
+> **⚠️ Writes execute immediately.** `/me/sendMail`, `/forward`, `/accept`, `/decline`, `/permanentDelete`, and similar verbs are immediate and visible to others (or unrecoverable). **Summarize the action (recipients, subject, body, target) and get explicit user confirmation before invoking.** Never auto-send drafts or auto-respond to meeting invites.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `actionUrl` | string | Yes | The action path (e.g., `/me/sendMail`, `/me/messages/{id}/copy`). Must be relative to the domain root — start with `/`, do not include a scheme or authority (`https://graph.microsoft.com` ❌, `/me/sendMail` ✅). URL-encode any special characters in path segments or query values. |
-| `jsonBody` | string | No | JSON-encoded string with action parameters. Some actions require a body; others take no parameters. |
+| `actionUrl` | string | Yes | Action path, server-relative (`/me/sendMail`, `/me/messages/{id}/copy`). Start with `/`, no scheme or authority. URL-encode special characters. |
+| `jsonBody` | object \| string | No | Action parameters as a JSON object (`{"comment":"FYI"}`) or a JSON-encoded string. Some actions take no body. |
 
 ## When to Use
 
-- Sending an email (rather than just creating a draft)
-- Accepting, declining, or tentatively accepting a meeting invitation
-- Copying or moving a message to another folder
-- Forwarding a message
-- Replying to a message
-- Computing free/busy availability for multiple users (`getSchedule`)
-- Reacting to a Teams message (`setReaction`)
-- Setting the user's Teams presence (`setUserPreferredPresence`)
-- Initiating a large file upload session (`createUploadSession`)
-- Subscribing to change notifications
+- Send mail (vs. creating a draft) — `/me/sendMail`, `/me/messages/{id}/send`
+- Accept / decline / tentatively accept a meeting — `/me/events/{id}/{accept|decline|tentativelyAccept}`
+- Copy or move a message — `/me/messages/{id}/{copy|move}`
+- Forward or reply — `/me/messages/{id}/{forward|reply}`
+- Compute free/busy across multiple users — `/me/calendar/getSchedule`
+- React to a Teams message — `/chats/{chatId}/messages/{messageId}/setReaction`
+- Set the user's Teams presence — `/me/presence/setUserPreferredPresence`
+- Initiate a large file upload session — `/me/drive/.../createUploadSession`
+- Subscribe to change notifications
 
-Distinguish from `create_entity`: use `do_action` for verbs (send, copy, move, accept, reply, getSchedule) rather than creating a new stored resource. If an operation has a function-like name (`getSchedule`, `findMeetingTimes`) but takes a JSON body, it's still an action — POST it through this tool.
+Vs. `create_entity`: use `do_action` for verbs (send, copy, move, accept, reply, getSchedule); use `create_entity` to create a new stored resource. Function-shaped names that still take a JSON body (`getSchedule`, `findMeetingTimes`) are actions — POST them here.
 
 ## Examples
 
@@ -127,4 +128,18 @@ For channel messages use the `/teams/{teamId}/channels/{channelId}/messages/{mes
 }
 ```
 
-The response returns an `uploadUrl` you can PUT chunks to. Use this for files larger than 4MB (`upload_blob`'s simple PUT limit).
+The response returns an `uploadUrl` you can PUT chunks to. **However, this skill does not expose a binary-upload tool** — see the deny rule in `SKILL.md`. Surface the `uploadUrl` to the user so they can complete the upload themselves; do not attempt to PUT bytes from inside the model.
+
+## Common failures (do not retry)
+
+`do_action` failures from Microsoft Graph are almost always permanent on the same payload. **Do not retry the same call** after any of these — repeated identical POSTs return the exact same error and burn tool budget without producing new information.
+
+| HTTP / code | Meaning | Action |
+|---|---|---|
+| `403` + `"Missing scope permissions"` | The signed-in user has not consented to the Graph scope this action needs (e.g. `Presence.ReadWrite` for `/me/presence/setPresence`, `Mail.Send` for `/me/sendMail`, `Calendars.ReadWrite` for `/me/events/{id}/accept`). | Stop. Tell the user the consent is missing and suggest `workiq auth consent --scopes <Scope>`. See [`troubleshooting.md`](troubleshooting.md#http-403-forbidden-on-an-entity-tool-call). |
+| `403` + empty / generic `Forbidden` | Tenant policy or admin-controlled action (e.g. presence write in a managed tenant, send-as another mailbox). The body has no scope hint because the directory denied the call before scope evaluation. | Stop. Tell the user the operation is policy-denied. Do NOT iterate through sibling action verbs (`setUserPreferredPresence` ↔ `setPresence`) — they share the same policy gate. |
+| `400` / `BadRequest` on the body | The `jsonBody` wrapper shape is wrong (e.g. `sendMail` expects `{Message, SaveToSentItems}`, not a raw `Message`). | Stop. Re-read this file's JSON sample for that action; do not re-send the same body. |
+| `404` on `actionUrl` | The entity ID embedded in the path is stale, or the action verb does not exist on this resource family. | Stop. Re-`fetch` to get the current ID, OR re-check `search_paths` for the right action verb. |
+
+**Especially for `/me/presence/*`:** if the first `setPresence` or `setUserPreferredPresence` POST returns 403, the second will too. Both verbs share the `Presence.ReadWrite[.All]` scope gate. Stop after one 403, surface the failure, and (for missing-consent flavor) suggest `workiq auth consent --scopes Presence.ReadWrite`.
+

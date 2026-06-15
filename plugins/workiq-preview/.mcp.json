@@ -1,8 +1,7 @@
 {
   "mcpServers": {
     "workiq-preview": {
-      "command": "npx",
-      "args": ["-y", "@microsoft/workiq@preview", "mcp"]
+      "url": "https://workiq.svc.cloud.microsoft/mcp"
     }
   }
 }

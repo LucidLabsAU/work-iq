@@ -17,7 +17,7 @@ Call an OData function via HTTP GET. Functions are **side-effect-free** named op
 - **Any "what's new / what's changed / what was added or removed since X" question** — that is a
   delta query, and this tool is the only correct route for it
 
-If you're not sure whether something is a function or an action, run `get_schema` on the path with `httpMethod: "get"` first. If no GET schema is returned but POST is, route to `do_action`.
+If you're not sure whether something is a function or an action, run `get_schema` on the path with `operationType: "fetch"` first. If no `fetch` schema is returned but `action` is, route to `do_action`.
 
 ## Delta queries (change tracking)
 
