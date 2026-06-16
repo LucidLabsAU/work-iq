@@ -1,41 +1,35 @@
 # update_entity
 
-Update an existing WorkIQ entity via HTTP PATCH. Only the fields you include in the body are changed — other fields are left untouched.
+PATCH an existing WorkIQ entity. Only fields in the body are changed; other fields are untouched.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `entityUrl` | string | Yes | The entity path including the item's ID (e.g., `/me/events/{id}`). Get the ID from a prior `fetch` or `create_entity` call. Must be relative to the domain root — start with `/`, do not include a scheme or authority (`https://graph.microsoft.com` ❌, `/me/events/{id}` ✅). URL-encode any special characters in path segments. |
-| `jsonBody` | string | Yes | JSON-encoded string containing only the fields to update. Omit fields you don't want to change. |
+| `entityUrl` | string | Yes | Entity path including ID (`/me/events/{id}`). Get the ID from `fetch` or `create_entity`. Server-relative, starts with `/`, no scheme. URL-encode special characters. |
+| `jsonBody` | object \| string | Yes | Fields to update, supplied as a JSON object (`{"isRead":true}`) or a JSON-encoded string. Omit fields you don't want to change. |
+| `headers` | object | No | Optional HTTP request headers. If the operation's schema declares an `If-Match` header parameter, you MUST set it to the `@odata.etag` value from the latest read of the same entity. |
 
 ## When to Use
 
-- Marking an email as read/unread
-- Updating the subject, time, or location of a calendar event
-- Changing the status or due date of a task
-- Updating a document's metadata
+- Mark email read/unread
+- Update event subject, time, location
+- Change task status or due date
+- Update document metadata
 - Any partial update to an existing M365 entity
 
 ## Gotchas
 
-- **`entityUrl` must address exactly one entity by ID.** A collection or query URL
-  (`/me/planner/tasks?$filter=startswith(title,'...')`) is rejected with
-  "Write requests are only supported on contained entities" — resolve the ID with
-  `fetch` first, then PATCH `/.../{id}`.
-- The ID must come from a real tool response for the **same entity type** — a directory user ID
-  does not work on `/me/contacts/{id}`, and an ID scraped from a search-result URL is not an
-  entity ID.
-- Updating one entity means one PATCH. If it fails, fix the request and retry once or twice —
-  do not loop the same PATCH or fan it out across other entities.
-- **Planner writes need an `If-Match` etag** — fetch the task first; on a 412/precondition
-  error, re-fetch and retry (see `references/tasks-work-iq.md`).
+- **`entityUrl` must address exactly one entity by ID.** A collection or query URL (`/me/planner/tasks?$filter=startswith(title,'...')`) is rejected with "Write requests are only supported on contained entities" — resolve the ID with `fetch` first, then PATCH `/.../{id}`.
+- The ID must come from a real tool response for the **same entity type** — a directory user ID does not work on `/me/contacts/{id}`, and an ID scraped from a search-result URL is not an entity ID.
+- Updating one entity means one PATCH. If it fails, fix the request and retry once or twice — do not loop the same PATCH or fan it out across other entities.
+- **Planner writes need an `If-Match` etag** — fetch the task first; on a 412/precondition error, re-fetch and retry (see `references/tasks-work-iq.md`).
 
 ## Workflow
 
-1. Obtain the entity's `id` from `fetch` or `create_entity`
-2. Optionally call `get_schema` with `httpMethod: "patch"` to confirm which fields are updatable
-3. Call `update_entity` with only the fields you want to change
+1. Get the entity's `id` from `fetch` or `create_entity`
+2. (Optional) `get_schema` with `operationType: "update"` to confirm updatable fields
+3. `update_entity` with only the fields to change
 
 ## Examples
 
@@ -78,3 +72,15 @@ Update an existing WorkIQ entity via HTTP PATCH. Only the fields you include in 
   "jsonBody": "{\"categories\":[\"Project Alpha\"]}"
 }
 ```
+
+## Common failures (do not retry)
+
+`update_entity` failures from Microsoft Graph are almost always permanent on the same payload. **Do not retry the same call** after any of these -- repeated identical PATCHes return the exact same error.
+
+| HTTP / code | Meaning | Action |
+|---|---|---|
+| `403` + `"Missing scope permissions"` | The signed-in user has not consented to the Graph scope this PATCH needs (e.g. `ChannelMessage.ReadWrite` for editing channel messages, `Mail.ReadWrite` for marking mail). | Stop. Tell the user the consent is missing and suggest `workiq auth consent --scopes <Scope>`. See [`troubleshooting.md`](troubleshooting.md#http-403-forbidden-on-an-entity-tool-call). |
+| `403` + `"Authorization_RequestDenied"` + `"Insufficient privileges"` on `/me` | Directory-managed property (`jobTitle`, `department`, `officeLocation`, `manager`, etc.) is read-only via delegated `/me` scopes. End users cannot change these even with extra consent. | Stop. Tell the user the property is directory-managed and an admin change is required. **Do not call `workiq auth consent` -- it will not help.** |
+| `400` with field name | The field is not in the PATCH-able set for that entity (e.g. computed/read-only) or value type is wrong. | Stop. Re-read [`get_schema`](get-schema-work-iq.md) for the writable-field list before reissuing. |
+| `404` | The entity ID is stale / wrong / from a different mailbox. | Stop. Re-`fetch` to get the current ID; do not retry the same URL. |
+

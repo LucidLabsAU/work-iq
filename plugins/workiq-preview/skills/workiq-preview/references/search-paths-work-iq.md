@@ -1,31 +1,24 @@
 # search_paths
 
-Discover available WorkIQ API paths by searching with a regex filter. Use this as the first step when you need to work with entity tools but aren't sure what paths are available for a given resource type.
+Discover available WorkIQ API paths by regex. Use as the first step before entity tools when the path is unknown.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `filter` | string | No | Regex pattern to match against available paths (e.g., `messages`, `.*calendar.*`). Omit to list all paths. |
-| `backend` | string | No | Which backend to search: `graph-v1` (default), `sharepoint-rest`, or `dataverse` |
+| `filter` | string | Yes | Regex pattern (e.g., `messages`, `.*calendar.*`). Empty or missing filter is rejected by the current server — pass `.*` to enumerate everything. |
 
-> **⚠️ Stay on the default backend for M365 core data.** All mail, calendar, contacts, tasks,
-> people, Teams, and files paths live in `graph-v1` (the default). Only pass
-> `backend: "sharepoint-rest"` or `backend: "dataverse"` when the user explicitly targets those
-> systems. If a non-default backend search errors or returns nothing, **do not** retry other
-> backends hunting for core M365 data — it is not there.
+> **⚠️ One catalog only.** `search_paths` enumerates the single WorkIQ path catalog (Microsoft Graph paths). There is no `backend` / `source` / `provider` parameter — do not pass one, do not fabricate one from general knowledge. If the user asks about SharePoint REST, Dataverse, or any other API surface, say WorkIQ surfaces Graph paths through `search_paths` and report that the other surface is not available here.
 
-## When to Use
+## Workflow
 
-- Before using `fetch`, `create_entity`, or other entity tools when you're unsure of the exact path
-- To discover what data is accessible for a given concept (e.g., "what calendar-related paths exist?")
-- To explore the SharePoint REST or Dataverse backends (only when the user asks about those systems)
+1. `search_paths` with a broad filter to find candidate paths
+2. `get_schema` on the chosen path
+3. `fetch` or the appropriate write tool (`create_entity` / `update_entity` / `delete_entity` / `do_action` / `call_function`)
 
-## Recommended Workflow
+If the user asks to discover paths AND read or mutate, continue to the mutation tool after picking the path — discovery alone is incomplete.
 
-1. Call `search_paths` with a broad filter to find candidate paths
-2. Call `get_schema` on the path you want to use to understand its fields and parameters
-3. Call `fetch` or the appropriate write tool with the confirmed path
+Never answer API/path questions from general Graph knowledge, local SQL, filesystem search, or built-in tools. Summarize paths from `search_paths`; if none matched, say WorkIQ did not confirm one.
 
 ## Examples
 
@@ -39,14 +32,9 @@ Discover available WorkIQ API paths by searching with a regex filter. Use this a
 { "filter": ".*calendar.*" }
 ```
 
-### List all available paths (no filter)
+### Enumerate every path
 ```json
-{}
-```
-
-### Search SharePoint REST paths
-```json
-{ "backend": "sharepoint-rest" }
+{ "filter": ".*" }
 ```
 
 ### Find Planner paths

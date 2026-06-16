@@ -1,5 +1,7 @@
 # upload_blob
 
+> ⚠️ **Not released yet.** `upload_blob` is documented here for future reference but is **not part of the current preview MCP surface**. Calling it from this preview build returns `tool does not exist`. When a user asks to upload a local file today, tell them this preview build can't accept raw byte payloads yet and ask them to upload through the OneDrive / SharePoint web UI — see the [Binary file content](../SKILL.md) section in `SKILL.md`.
+
 Upload a local file to a WorkIQ path via HTTP PUT. Use this to upload files to OneDrive or SharePoint.
 
 ## Parameters

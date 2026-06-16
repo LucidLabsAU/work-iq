@@ -1,34 +1,31 @@
 # delete_entity
 
-Delete a WorkIQ entity via HTTP DELETE. This is a permanent operation — use with care, especially for emails and calendar events.
+DELETE a WorkIQ entity. Permanent — use with care, especially for emails and calendar events.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `entityUrl` | string | Yes | The entity path including the item's ID (e.g., `/me/events/{id}`). Must be relative to the domain root — start with `/`, do not include a scheme or authority (`https://graph.microsoft.com` ❌, `/me/events/{id}` ✅). URL-encode any special characters in path segments. |
+| `entityUrl` | string | Yes | Entity path including ID (`/me/events/{id}`). Server-relative, starts with `/`, no scheme. URL-encode special characters. |
+| `headers` | object | No | Optional HTTP request headers. If the operation's schema declares an `If-Match` header parameter, you MUST set it to the `@odata.etag` value from the latest read of the same entity. |
 
 ## When to Use
 
-- Deleting a calendar event
-- Deleting a draft email
-- Removing a Planner task
-- Deleting a Teams message (where permitted)
+- Delete a calendar event
+- Delete a draft email
+- Remove a Planner task
+- Delete a Teams message (where permitted)
 
 ## Gotchas
 
-- **Email deletion moves to Deleted Items**, it does not permanently delete. That is the right
-  default for any "delete / remove / get rid of this email" request — use this tool. Reach for
-  `do_action` with `/me/messages/{id}/permanentDelete` only when the user explicitly
-  asks for permanent, unrecoverable removal, and only against the **single resolved message ID**
-  — never loop permanentDelete across a list of messages.
-- **Calendar event deletion** removes it from the calendar and sends cancellation notices to attendees if it was an organized meeting.
-- Always confirm the entity ID with `fetch` before deleting to avoid removing the wrong item.
+- **Email delete moves to Deleted Items** — that's the right default for any "delete / remove / get rid of this email" request. Reach for `do_action` with `/me/messages/{id}/permanentDelete` only when the user explicitly asks for permanent, unrecoverable removal, and only against the **single resolved message ID** — never loop `permanentDelete` across a list of messages.
+- **Event delete** sends cancellation notices if it was an organized meeting.
+- Confirm the entity ID with `fetch` before deleting.
 
 ## Workflow
 
-1. Use `fetch` to confirm you have the correct entity and its ID
-2. Call `delete_entity` with the entity's full path including ID
+1. `fetch` to confirm the correct entity and ID
+2. `delete_entity` with the entity's full path including ID
 
 ## Examples
 

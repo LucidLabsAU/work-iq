@@ -1,29 +1,29 @@
 # create_entity
 
-Create a new WorkIQ entity by POSTing to a collection path. Use this to create calendar events, draft emails, tasks, Teams messages, and other M365 resources.
+POST a new WorkIQ entity to a collection — calendar events, draft emails, tasks, Teams messages, other M365 resources.
 
-> **⚠️ Writes are persistent.** Creating a calendar event sends invitations to attendees; creating a draft email is invisible until sent but takes up space; creating a task or message in a shared list is visible to collaborators. **Before invoking, summarize what you're about to create (subject, attendees, due date, parent list/folder) and get the user's explicit confirmation.**
+> **⚠️ Writes are persistent.** Creating an event sends invitations; creating a task or shared-list message is visible to collaborators. **Summarize what you're creating (subject, attendees, due date, parent) and get explicit user confirmation before invoking.**
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `parentUrl` | string | Yes | The parent collection path to POST to (e.g., `/me/events`, `/me/messages`). Do not include an ID — this creates a new item. Must be relative to the domain root — start with `/`, do not include a scheme or authority (`https://graph.microsoft.com` ❌, `/me/events` ✅). URL-encode any special characters in path segments. |
-| `jsonBody` | string | Yes | JSON-encoded string with the fields for the new entity. Use `get_schema` on the path with `httpMethod: "post"` first if unsure of required fields. |
+| `parentUrl` | string | Yes | Parent collection path (`/me/events`, `/me/messages`). No ID — this creates a new item. Server-relative, starts with `/`, no scheme. URL-encode special characters. |
+| `jsonBody` | object \| string | Yes | Fields for the new entity, supplied as a JSON object (`{"subject":"Hi"}`) or a JSON-encoded string. Run `get_schema` with `operationType: "create"` first if unsure. |
 
 ## When to Use
 
-- Creating a new calendar event
-- Creating a draft email (use `do_action` with `/me/sendMail` to send immediately)
-- Creating a new Planner task
-- Creating a new Teams channel message
-- Any time you need to POST a new item to a collection
+- New calendar event
+- Draft email (use `do_action` `/me/sendMail` to send immediately)
+- New Planner task
+- New Teams channel message
+- Any POST creating a new item in a collection
 
 ## Workflow
 
-1. Call `get_schema` with the collection URL and `httpMethod: "post"` to confirm required fields
-2. Call `create_entity` with the collection URL and a valid body
-3. Save the returned `id` if you need to reference or update the entity later
+1. `get_schema` with the collection URL and `operationType: "create"` to confirm required fields
+2. `create_entity` with the collection URL and a valid body
+3. Save the returned `id` for later updates
 
 ## Examples
 
