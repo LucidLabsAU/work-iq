@@ -18,29 +18,25 @@ Add to your `.mcp.json` or IDE MCP settings:
 {
   "mcpServers": {
     "workiq-preview": {
-      "url": "https://workiq.svc.cloud.microsoft/mcp"
+      "tools": ["*"],
+      "auth": {
+        "redirectPort": 12798
+      },
+      "type": "http",
+      "url": "https://workiq.svc.cloud.microsoft/mcp",
+      "oauthClientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+      "oauthPublicClient": true,
+      "source": "user"
     }
   }
 }
 ```
 
-The plugin connects to the hosted WorkIQ MCP prod endpoint. It does **not** launch a local `npx` MCP server for tool calls.
+The plugin connects to the hosted WorkIQ MCP prod endpoint. It does **not** launch a local MCP server for tool calls.
 
 ## Updating
 
-The MCP tool surface is served by the hosted WorkIQ endpoint above, so updating a local npm package is not required for MCP tool calls.
-
-Some setup and diagnostics operations are CLI-only (`auth login`/`logout`, `auth consent`, `config show`/`set`/`reset`, `version`). When you need those, run the published CLI via `npx`:
-
-```bash
-npx -y @microsoft/workiq@latest <command>
-```
-
-To verify the CLI version:
-
-```bash
-npx -y @microsoft/workiq@latest version
-```
+The MCP tool surface is served by the hosted WorkIQ endpoint above, so updating a local package is not required for MCP tool calls.
 
 ## Usage
 
@@ -81,10 +77,6 @@ The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `
 ```
 
 > ⚠️ `fetch_blob` and `upload_blob` are documented for future reference but are not released in the current WorkIQ MCP surface. For downloads, fetch metadata and return `webUrl`; for uploads, direct the user to OneDrive / SharePoint until raw byte support is released.
-
-### CLI commands (out-of-band of the MCP server)
-
-Some operations are not exposed as MCP tools and must be run as shell commands — `auth login`/`logout`, `auth consent` (granting additional Graph scopes), `config show`/`set`/`reset`, `version`. Invoke them via `npx -y @microsoft/workiq@latest <command>` when needed. See [`skills/workiq-preview/references/cli-commands.md`](./skills/workiq-preview/references/cli-commands.md) for the full reference.
 
 ## Skills
 

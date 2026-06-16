@@ -136,10 +136,9 @@ The response returns an `uploadUrl` you can PUT chunks to. **However, this skill
 
 | HTTP / code | Meaning | Action |
 |---|---|---|
-| `403` + `"Missing scope permissions"` | The signed-in user has not consented to the Graph scope this action needs (e.g. `Presence.ReadWrite` for `/me/presence/setPresence`, `Mail.Send` for `/me/sendMail`, `Calendars.ReadWrite` for `/me/events/{id}/accept`). | Stop. Tell the user the consent is missing and suggest `workiq auth consent --scopes <Scope>`. See [`troubleshooting.md`](troubleshooting.md#http-403-forbidden-on-an-entity-tool-call). |
+| `403` + `"Missing scope permissions"` | The signed-in user has not consented to the Graph scope this action needs (e.g. `Presence.ReadWrite` for `/me/presence/setPresence`, `Mail.Send` for `/me/sendMail`, `Calendars.ReadWrite` for `/me/events/{id}/accept`). | Stop. Tell the user the consent is missing and identify the missing scope from the error body. See [`troubleshooting.md`](troubleshooting.md#http-403-forbidden-on-an-entity-tool-call). |
 | `403` + empty / generic `Forbidden` | Tenant policy or admin-controlled action (e.g. presence write in a managed tenant, send-as another mailbox). The body has no scope hint because the directory denied the call before scope evaluation. | Stop. Tell the user the operation is policy-denied. Do NOT iterate through sibling action verbs (`setUserPreferredPresence` ↔ `setPresence`) — they share the same policy gate. |
 | `400` / `BadRequest` on the body | The `jsonBody` wrapper shape is wrong (e.g. `sendMail` expects `{Message, SaveToSentItems}`, not a raw `Message`). | Stop. Re-read this file's JSON sample for that action; do not re-send the same body. |
 | `404` on `actionUrl` | The entity ID embedded in the path is stale, or the action verb does not exist on this resource family. | Stop. Re-`fetch` to get the current ID, OR re-check `search_paths` for the right action verb. |
 
-**Especially for `/me/presence/*`:** if the first `setPresence` or `setUserPreferredPresence` POST returns 403, the second will too. Both verbs share the `Presence.ReadWrite[.All]` scope gate. Stop after one 403, surface the failure, and (for missing-consent flavor) suggest `workiq auth consent --scopes Presence.ReadWrite`.
-
+**Especially for `/me/presence/*`:** if the first `setPresence` or `setUserPreferredPresence` POST returns 403, the second will too. Both verbs share the `Presence.ReadWrite[.All]` scope gate. Stop after one 403, surface the failure, and identify the missing consent scope if the error body names one.
