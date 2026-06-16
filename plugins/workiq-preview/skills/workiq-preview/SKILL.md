@@ -133,15 +133,13 @@ WorkIQ MCP tool calls use the hosted prod endpoint configured in `.mcp.json`:
 {
   "mcpServers": {
     "workiq-preview": {
-      "tools": ["*"],
-      "auth": {
-        "redirectPort": 12798
-      },
       "type": "http",
       "url": "https://workiq.svc.cloud.microsoft/mcp",
       "oauthClientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
       "oauthPublicClient": true,
-      "source": "user"
+      "auth": {
+        "redirectPort": 12798
+      }
     }
   }
 }
