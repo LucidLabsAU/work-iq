@@ -79,8 +79,7 @@ PATCH an existing WorkIQ entity. Only fields in the body are changed; other fiel
 
 | HTTP / code | Meaning | Action |
 |---|---|---|
-| `403` + `"Missing scope permissions"` | The signed-in user has not consented to the Graph scope this PATCH needs (e.g. `ChannelMessage.ReadWrite` for editing channel messages, `Mail.ReadWrite` for marking mail). | Stop. Tell the user the consent is missing and suggest `workiq auth consent --scopes <Scope>`. See [`troubleshooting.md`](troubleshooting.md#http-403-forbidden-on-an-entity-tool-call). |
-| `403` + `"Authorization_RequestDenied"` + `"Insufficient privileges"` on `/me` | Directory-managed property (`jobTitle`, `department`, `officeLocation`, `manager`, etc.) is read-only via delegated `/me` scopes. End users cannot change these even with extra consent. | Stop. Tell the user the property is directory-managed and an admin change is required. **Do not call `workiq auth consent` -- it will not help.** |
+| `403` + `"Missing scope permissions"` | The signed-in user has not consented to the Graph scope this PATCH needs (e.g. `ChannelMessage.ReadWrite` for editing channel messages, `Mail.ReadWrite` for marking mail). | Stop. Tell the user the consent is missing and identify the missing scope from the error body. See [`troubleshooting.md`](troubleshooting.md#http-403-forbidden-on-an-entity-tool-call). |
+| `403` + `"Authorization_RequestDenied"` + `"Insufficient privileges"` on `/me` | Directory-managed property (`jobTitle`, `department`, `officeLocation`, `manager`, etc.) is read-only via delegated `/me` scopes. End users cannot change these even with extra consent. | Stop. Tell the user the property is directory-managed and an admin change is required. **Additional end-user consent will not help.** |
 | `400` with field name | The field is not in the PATCH-able set for that entity (e.g. computed/read-only) or value type is wrong. | Stop. Re-read [`get_schema`](get-schema-work-iq.md) for the writable-field list before reissuing. |
 | `404` | The entity ID is stale / wrong / from a different mailbox. | Stop. Re-`fetch` to get the current ID; do not retry the same URL. |
-

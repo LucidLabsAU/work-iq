@@ -1,6 +1,6 @@
-# Work IQ Plugin — Preview
+# Work IQ Plugin
 
-> **Preview build.** Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
+Full WorkIQ tool surface for GitHub Copilot CLI: agentic semantic queries via `ask` **plus** direct, structured reads and writes against Microsoft 365 — emails, meetings, calendar, documents, Teams messages, OneDrive/SharePoint files, and people.
 
 ## Installation
 
@@ -16,35 +16,29 @@ Add to your `.mcp.json` or IDE MCP settings:
 
 ```json
 {
-  "workiq-preview": {
-    "command": "npx",
-    "args": ["-y", "@microsoft/workiq@preview", "mcp"],
-    "tools": ["*"]
+  "mcpServers": {
+    "workiq-preview": {
+      "type": "http",
+      "url": "https://workiq.svc.cloud.microsoft/mcp",
+      "oauthClientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+      "oauthPublicClient": true,
+      "auth": {
+        "redirectPort": 12798
+      }
+    }
   }
 }
 ```
 
+The plugin connects to the hosted WorkIQ MCP prod endpoint. It does **not** launch a local MCP server for tool calls.
+
 ## Updating
 
-If you installed WorkIQ globally with npm, run the following command to install or update to the latest preview build:
-
-```bash
-npm install -g @microsoft/workiq@preview
-```
-
-> **Note:** `npm update` ignores dist-tag specifiers, so it will not switch you to the preview channel. Use `npm install` as shown above.
-
-To verify the installed version after updating:
-
-```bash
-workiq version
-```
-
-> 💡 **Using npx?** If you run WorkIQ via `npx -y @microsoft/workiq@preview mcp`, npx automatically fetches the latest version each time, so no manual update step is needed.
+The MCP tool surface is served by the hosted WorkIQ endpoint above, so updating a local package is not required for MCP tool calls.
 
 ## Usage
 
-The preview plugin exposes the full WorkIQ tool surface — read **and** write — via 11 MCP tools.
+The plugin exposes the WorkIQ MCP tool surface — read **and** write — from `https://workiq.svc.cloud.microsoft/mcp`.
 
 ### Semantic queries (`ask`)
 
@@ -64,7 +58,6 @@ The preview plugin exposes the full WorkIQ tool surface — read **and** write �
 "Show me the channels in the DevX team"
 "List files in my OneDrive 'Specs' folder"
 "Who are Rob's direct reports?"
-"Download the latest PowerPoint from my OneDrive 'Specs' folder"
 ```
 
 ### Writes (`create_entity`, `update_entity`, `delete_entity`, `do_action`, `upload_blob`)
@@ -78,13 +71,10 @@ The preview plugin exposes the full WorkIQ tool surface — read **and** write �
 "Decline the Monday standup — I'll catch up on the recording"
 "Mark Sarah's last three emails as read"
 "Reply to the deadline thread with 'on track for Friday'"
-"Upload report.pdf to my OneDrive root"
 "Move the design review thread to the Archive folder"
 ```
 
-### CLI commands (out-of-band of the MCP server)
-
-Some operations are not exposed as MCP tools and must be run as shell commands — `auth login`/`logout`, `auth consent` (granting additional Graph scopes), `config show`/`set`/`reset`, `version`. Invoke them via `npx -y @microsoft/workiq@preview <command>` to guarantee you hit the same binary the MCP server uses. See [`skills/workiq-preview/references/cli-commands.md`](./skills/workiq-preview/references/cli-commands.md) for the full reference.
+> ⚠️ `fetch_blob` and `upload_blob` are documented for future reference but are not released in the current WorkIQ MCP surface. For downloads, fetch metadata and return `webUrl`; for uploads, direct the user to OneDrive / SharePoint until raw byte support is released.
 
 ## Skills
 

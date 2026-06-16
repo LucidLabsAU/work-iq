@@ -1,6 +1,6 @@
 # fetch_blob
 
-> ⚠️ **Not released yet.** `fetch_blob` is documented here for future reference but is **not part of the current preview MCP surface**. Calling it from this preview build returns `tool does not exist`. When a user asks to download a file or fetch attachment bytes today, return the entity's `webUrl` (or the parent message URL for an attachment) and tell the user this preview build can't stream raw bytes yet — see the [Binary file content](../SKILL.md) section in `SKILL.md` for the canonical workflow.
+> ⚠️ **Not released yet.** `fetch_blob` is documented here for future reference but is **not part of the current WorkIQ MCP surface**. Calling it today returns `tool does not exist`. When a user asks to download a file or fetch attachment bytes, return the entity's `webUrl` (or the parent message URL for an attachment) and tell the user WorkIQ can't stream raw bytes yet — see the [Binary file content](../SKILL.md) section in `SKILL.md` for the canonical workflow.
 
 Download binary content from a WorkIQ path. Use this for file content, email attachments, document downloads, and any other binary resource from Microsoft 365.
 

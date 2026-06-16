@@ -1,15 +1,14 @@
 ---
 name: workiq-preview
-description: Preview build of WorkIQ — the full Microsoft 365 tool surface - agentic semantic queries via ask PLUS direct, structured reads and writes for emails, meetings, calendar, documents, Teams messages, Planner plans/tasks, OneDrive/SharePoint files, and people. USE THIS SKILL for ANY workplace question or write action where the data lives in Microsoft 365. Read triggers, "what did [person] say", "what are [person]'s priorities", "top of mind from [person]", "what was discussed", "find emails about", "what planner tasks are due", "what meetings do I have", "what documents", "who is working on", "what's the status of", "any updates on", "what's new/changed since". Write triggers, "send email", "reply to [thread]", "forward to", "create a calendar event", "schedule a meeting", "accept/decline the meeting", "mark as read", "delete the draft", "add a task", "remind me to", "mark the task done", "show my planner tasks", "send a Teams chat/message", "post in the [channel/chat]", "reply in Teams", "react to the message", "set my presence", "upload to OneDrive", "download attachment". Discovery/schema triggers, "which endpoints/paths exist", "what fields are required/updatable", "what does the API/request body expect", "what parameters does [operation] take", "describe the data model". When in doubt about workplace context, try WorkIQ first.
+description: WorkIQ - Microsoft 365 tool surface for agents. Use for any workplace question or write action where data lives in M365. Supports semantic `ask` plus structured tools (`fetch`, create/update/delete, actions, functions, path/schema discovery) for mail, meetings/calendar, documents/files, Teams chats/channels, OneDrive/SharePoint, and people. Read triggers, "what did [person] say", priorities/top of mind, meeting decisions/action items, summarize thread/chat, find emails/docs, list meetings/messages/files/channels, project status/updates, "what changed since". Write triggers, send/reply/forward email, create/update/accept/decline meetings, mark read, delete drafts/items, send/post/reply/react in Teams, set presence, upload/download via web URL. Discovery triggers, available endpoints/paths, fields, required/updatable properties, request body, operation parameters, schema/data model. When in doubt about workplace context, try WorkIQ first. Prefer `ask` for synthesis; use entity tools for exact reads/writes.
 compatibility: >
-  Requires Node.js 18+ and npm (provides `npx`, used to launch the
-  @microsoft/workiq MCP server). If missing, see
-  references/install-prerequisites.md for platform-specific install commands.
+  Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
+  tool calls.
 ---
 
 # WorkIQ
 
-WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask` tool for semantic questions, the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`), and the **WorkIQ CLI commands** used for one-time setup and configuration (auth login/logout, granting additional permission scopes, viewing or changing config, checking the installed version).
+WorkIQ connects AI agents to Microsoft 365 Copilot for workplace intelligence grounded in organizational data. This skill teaches the model how to use the full WorkIQ toolset: the agentic `ask` tool for semantic questions and the fast **entity tools** for direct structured access to M365 data (`fetch`, `create_entity`, `update_entity`, `delete_entity`, `do_action`, `call_function`, `search_paths`, `get_schema`).
 
 ## 🛑 STOP — Read This Before Your First Tool Call
 
@@ -128,25 +127,39 @@ Common failure: fetching the entity and stopping, asking the user "did you want 
 
 ## Prerequisites
 
-The WorkIQ MCP server runs via `npx`, which requires **Node.js 18+** and **npm** on the user's machine.
+WorkIQ MCP tool calls use the hosted prod endpoint configured in `.mcp.json`:
 
-If a WorkIQ tool call fails with an error suggesting `npx`, `node`, or `npm` is not found (for example, `'npx' is not recognized` on Windows, or `command not found: npx` on macOS/Linux):
+```json
+{
+  "mcpServers": {
+    "workiq-preview": {
+      "type": "http",
+      "url": "https://workiq.svc.cloud.microsoft/mcp",
+      "oauthClientId": "ba081686-5d24-4bc6-a0d6-d034ecffed87",
+      "oauthPublicClient": true,
+      "auth": {
+        "redirectPort": 12798
+      }
+    }
+  }
+}
+```
 
-1. Run `node --version` to confirm whether Node.js is installed and at version 18 or higher.
-2. If it is missing or too old, read [references/install-prerequisites.md](references/install-prerequisites.md) and walk the user through the install command appropriate for their operating system.
-3. Ask the user to **restart the Copilot CLI session** after installing — the MCP server is only launched at session start.
-
-Do not silently retry the tool call or give up — guide the user through the install.
+No local package or runtime install is required for MCP tool calls. Do not block MCP tool usage on local machine prerequisites.
 
 ## Configuration
 
-Authentication is automatic with the connected user's credentials.
+MCP tool calls go to the hosted WorkIQ prod endpoint (`https://workiq.svc.cloud.microsoft/mcp`) and authenticate with the connected user's credentials.
 
-## CLI commands (out-of-band of the MCP server)
+### Authentication before hosted MCP calls
 
-Some WorkIQ operations are **not exposed as MCP tools** and must be run as shell commands — for example `auth login`/`logout`, `auth consent` (granting additional permission scopes), `config show`/`set`/`reset`, and `version`. Always invoke them via `npx -y @microsoft/workiq@preview <command>` so you hit the same binary version the MCP server uses.
+The hosted endpoint requires an authenticated Microsoft 365 user token. Your MCP host should acquire and attach that token before sending tool calls to `https://workiq.svc.cloud.microsoft/mcp`; do **not** put tokens in prompts, `.mcp.json`, or tool arguments.
 
-For the full command reference and usage guidance, see `references/cli-commands.md`.
+If a WorkIQ MCP call fails because the user is not signed in, the token is stale, or additional Graph scopes are required:
+
+1. If no account is known, ask the user which Microsoft 365 account they want WorkIQ to use. Do not guess from local git, OS, or email-like strings in the prompt.
+2. Tell the user the hosted MCP endpoint needs a valid Microsoft 365 sign-in or tenant/admin consent before the call can succeed.
+3. Retry the original WorkIQ MCP tool call only after the MCP host reports that authentication or consent has been refreshed.
 
 ## Resolving tool names in your host
 
@@ -223,23 +236,23 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 > **Server may deny families by policy.** Tenants can disable specific path families
 > server-side. If a call returns `Access denied for path: <X>`, the path isn't in the
 > tenant's allowlist — **do not retry, do not fall back to a different path, do not call `ask`
-> as a workaround.** Tell the user the path is policy-denied. As of the current preview,
+> as a workaround.** Tell the user the path is policy-denied. Currently,
 > `/me/todo/*`, `/me/contacts`, and writes on `/me/outlook/masterCategories` are commonly
 > affected — `search_paths` confirms what's exposed for the connected tenant.
 
 ### 🛑 Binary file content is not yet released — `fetch_blob` and `upload_blob` are not callable today
 
-`fetch_blob` and `upload_blob` are documented for future reference, but **they are not part of the current preview MCP surface**. Attempting to call them returns `tool does not exist`. Do not call them, do not search for them in your tool list, do not invent them from a similar name (e.g. `download_file`, `get_blob`, `put_file`).
+`fetch_blob` and `upload_blob` are documented for future reference, but **they are not part of the current WorkIQ MCP surface**. Attempting to call them returns `tool does not exist`. Do not call them, do not search for them in your tool list, do not invent them from a similar name (e.g. `download_file`, `get_blob`, `put_file`).
 
-**You cannot retrieve or send raw bytes through this preview build yet** — no file payload, no attachment payload, no profile photo bytes, no base64 blob, no inline binary content.
+**You cannot retrieve or send raw bytes through the current WorkIQ MCP surface yet** — no file payload, no attachment payload, no profile photo bytes, no base64 blob, no inline binary content.
 
 When the user asks to download a file, upload a local file, get attachment content, or fetch a profile photo:
 
-1. **Confirm the request and tell the user this preview build does not support binary file content yet.**
+1. **Confirm the request and tell the user WorkIQ does not support binary file content yet.**
 2. **Return the file's web URL** instead — `fetch` `/me/drive/items/{id}` (or the SharePoint equivalent) returns a `webUrl` the user can open in OneDrive / SharePoint / Outlook directly. For an attachment, return the parent message URL so the user can open it in Outlook.
 3. **Never fabricate binary content.** Do not invent a base64 string, an `@odata.mediaContentType`, or an `@microsoft.graph.downloadUrl` to satisfy the request. If the user needs the bytes, point them at the web URL — they will download from there.
 
-If the user explicitly asks "why can't you download it directly?" — say the binary-download and upload tools (`fetch_blob`, `upload_blob`) are not yet released in this WorkIQ preview build; the structured-metadata tools (`fetch`, `create_entity`, etc.) are the full available surface today.
+If the user explicitly asks "why can't you download it directly?" — say the binary-download and upload tools (`fetch_blob`, `upload_blob`) are not yet released in WorkIQ; the structured-metadata tools (`fetch`, `create_entity`, etc.) are the full available surface today.
 
 ### ⚠️ Directory users and personal contacts are different stores
 
@@ -381,4 +394,3 @@ Read the relevant reference file for full parameter details and examples:
 - `references/delete-entity-work-iq.md` — if you need to delete an entity
 - `references/do-action-work-iq.md` — if you need to send mail, accept/decline meetings, copy/move messages
 - `references/troubleshooting.md` — if a tool call fails unexpectedly, returns an error, or behaves differently than documented
-- `references/cli-commands.md` — if you need to run WorkIQ CLI commands directly (auth, consent, config, version) outside the MCP server
