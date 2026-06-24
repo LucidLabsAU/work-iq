@@ -29,7 +29,6 @@ Planner task body fields: `planId`, `title`, `bucketId`, `assignments`, `dueDate
 - **Enforce filtering on Planner collection GETs:**
   - `GET /planner/plans` requires `$filter=owner eq '{Group or UserId}'`.
   - `GET /planner/tasks` requires a `$filter` containing `planId`.
-  - `GET /planner/buckets` requires a `$filter` containing `planId`.
 
 - **Mark a Planner task done:** `update_entity` with `{"percentComplete":100}`.
 - **Planner gotcha:** `update_entity` / `delete_entity` on Planner resources
