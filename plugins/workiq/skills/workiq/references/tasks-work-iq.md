@@ -29,6 +29,12 @@ Planner task body fields: `planId`, `title`, `bucketId`, `assignments`, `dueDate
 - **Enforce filtering on Planner collection GETs:**
   - `GET /planner/plans` requires `$filter=owner eq '{Group or UserId}'`.
   - `GET /planner/tasks` requires a `$filter` containing `planId`.
+- **Forbidden create plans/tasks paths** Do not use `create_entity`, `update_entity`, `delete_entity` for the following paths
+  - /me/planner/plans
+  - /me/planner/tasks
+  - /users/{user-id}/planner/plans
+  - /users/{user-id}/planner/tasks
+  - /groups/{group-id}/planner/plans
 
 - **Mark a Planner task done:** `update_entity` with `{"percentComplete":100}`.
 - **Planner gotcha:** `update_entity` / `delete_entity` on Planner resources
