@@ -50,9 +50,8 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 | Sending/replying/reacting in Teams, setting presence | "Send a chat to Alex", "Post in the Daily channel", "React with 👍", "Set me to Busy" | entity tools on `/chats/...` or `/teams/...` — see `references/teams-work-iq.md` |
 | Fetching a known entity by ID | "Get event `AAMk...` details" | `fetch` |
 | Listing files in a OneDrive/SharePoint folder | "List files in my OneDrive 'Specs' folder" | `fetch` |
-| Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` |
+| Listing tasks/plans/buckets in Planner | "List my Planner tasks due this week" | `fetch` — see `references/tasks-work-iq.md` avoid `ask` |
 | Listing / creating / completing Planner tasks | "Add a task to follow up with finance", "Mark my task done", "List my Planner tasks" | entity tools on `/planner/...` — see `references/tasks-work-iq.md` |
-| List my To Do task lists | "Show me my to-do lists" | `fetch` (`/me/todo/lists`) — subject to server policy |
 | Get a personal contact by name | "Get the contact card for Morgan Avery" | `fetch` (`/me/contacts?$filter=...`) — subject to server policy |
 | List or manage Outlook categories | "What Outlook categories do I have?" | `fetch` (`/me/outlook/masterCategories`); writes subject to server policy |
 | Org chart / direct reports / manager lookup | "Who are Rob's direct reports?" | `fetch` (`/users/{id}/directReports`) |
@@ -68,7 +67,8 @@ See [Resolving tool names in your host](#resolving-tool-names-in-your-host) belo
 > local markdown file, insert into a local/SQL table, or use any other builtin
 > task tracker — that does not satisfy the request and the user cannot see it in Planner.
 > If a WorkIQ task call fails, report the failure; do not silently substitute local storage.
-> See `references/tasks-work-iq.md`.
+> See `references/tasks-work-iq.md`; for named Planner plan requests, read that 
+> reference before resolving the plan so group-backed plans are checked correctly.
 
 ### Required workflow order — don't stop after a preparatory lookup
 
@@ -228,7 +228,6 @@ Entity tools provide **fast, direct access to specific M365 data** via Work IQ A
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete — see `references/tasks-work-iq.md` |
 | Teams | `/me/chats`, `/chats/{chatId}/messages`, `/me/joinedTeams`, `/teams/{teamId}/channels/{channelId}/messages`, `/me/presence` | chats vs channels are different surfaces — see `references/teams-work-iq.md` |
 | People | `/me`, `/users/{id}`, `/users/{id}/directReports`, `/me/manager`, `/me/contacts` | profile, org, contacts — see directory-vs-contacts warning below |
-| To Do | `/me/todo/lists`, `/me/todo/lists/{listId}/tasks` | list/create/update/delete — **commonly policy-denied**, see note below |
 | Outlook categories | `/me/outlook/masterCategories` | list/get/create/update/delete — writes commonly policy-denied |
 | Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | list/get JSON metadata only — binary content (file bytes, attachment payloads) is not released yet, see the deny rule below |
 | Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta?...`, `/me/contacts/delta` | "what's new/changed since" — via `call_function` only, never `fetch` |
