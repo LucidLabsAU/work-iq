@@ -325,7 +325,7 @@ if (Test-Path $daJsonPath) {
 }
 ```
 
-> **Note on provisioning:** if a later `atk provision` regenerates `declarativeAgent.json` from the widget template, the widget's own starters win — which is fine, because they still flow through the SSO guard. Regardless of starters, the authoritative SSO proof is the `[auth] Valid SSO token accepted: { sid, aud, tid, iss }` line in the MCP server terminal (keep that window open) plus the `200 OK` on the tool call in Copilot's Agent debug info.
+> **Note on provisioning:** if a later `atk provision` regenerates `declarativeAgent.json` from the widget template, the widget's own starters win — which is fine, because they still flow through the SSO guard. Regardless of starters, the authoritative SSO proof is the `[auth] Valid SSO token accepted: { sid, aud, tid, iss }` line in the MCP server terminal (keep that window open; run the server with `SSO_DEBUG=1` so the line prints) plus the `200 OK` on the tool call in Copilot's Agent debug info.
 
 ---
 
@@ -335,75 +335,18 @@ if (Test-Path $daJsonPath) {
 
 ### 7a. Add `jose` to the MCP server deps + write the auth helper:
 
+Install `jose` (idempotent — safe to re-run):
 ```powershell
-Push-Location $McpServerDir
-try {
-    # Add jose (modern, ESM-friendly JWT verify) if missing
-    $pkg = Get-Content "package.json" -Raw | ConvertFrom-Json
-    $hasJose = $pkg.dependencies -and ($pkg.dependencies.PSObject.Properties.Name -contains "jose")
-    if (-not $hasJose) { npm install jose@^5 --save | Out-Null; Write-Host "Added jose ✅" }
-
-    # Determine source dir (src) and extension
-    $srcDir = if (Test-Path "src") { "src" } else { "." }
-    $authPath = Join-Path $srcDir "auth.ts"
-
-    $authTs = @'
-// SSO bearer-token validation for the MCP server (minimal-touch, no express).
-// Verifies the incoming Authorization: Bearer <token> against Entra JWKS and exposes
-// the validated claims per-request via AsyncLocalStorage. No Graph call, no OBO.
-
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
-import { AsyncLocalStorage } from "node:async_hooks";
-
-export const claimsStore = new AsyncLocalStorage<JWTPayload | null>();
-
-// IMPORTANT: read env vars LAZILY (inside ensureConfig), NOT at module top-level.
-// Under ESM, this module can be imported BEFORE the server loads dotenv, so a top-level
-// `process.env.TENANT_ID` would capture `undefined` and permanently break JWKS/audience.
-// Resolving config on first request avoids that import-ordering bug.
-let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
-let audiences: string[] = [];
-let issuers: string[] = [];
-
-function ensureConfig(): void {
-  if (jwks) return;
-  const tenantId = process.env.TENANT_ID;
-  const clientId = process.env.CLIENT_ID;
-  const appIdUri = process.env.APP_ID_URI;
-  if (!tenantId) throw new Error("TENANT_ID not configured");
-  jwks = createRemoteJWKSet(new URL(`https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`));
-  // Accept EVERY audience form Entra may emit for this app. A real Copilot SSO token's `aud`
-  // is the BARE client-id GUID (NOT the api:// / App ID URI form), so it MUST be accepted —
-  // otherwise valid tokens 401 and Copilot enters an endless sign-in/consent loop. Still safe:
-  // the issuer is tenant-scoped and the token is minted only for this clientId.
-  // See references/sso-explained.md §3.2.
-  audiences = [clientId, `api://${clientId}`, appIdUri].filter(Boolean) as string[];
-  issuers = [
-    `https://login.microsoftonline.com/${tenantId}/v2.0`,
-    `https://sts.windows.net/${tenantId}/`,
-  ];
-}
-
-export async function validateBearerToken(authHeader?: string): Promise<JWTPayload> {
-  ensureConfig();
-  if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
-    throw new Error("Missing or malformed Authorization header");
-  }
-  const token = authHeader.slice(authHeader.indexOf(" ") + 1).trim();
-  const { payload } = await jwtVerify(token, jwks!, {
-    audience: audiences,
-    issuer: issuers,
-    algorithms: ["RS256"],
-  });
-  return payload;
-}
-'@
-    Set-Content -Path $authPath -Value $authTs -Encoding UTF8
-    Write-Host "Wrote $authPath ✅"
-} finally {
-    Pop-Location
-}
+npm --prefix $McpServerDir install jose@^5 --save
 ```
+
+Then create the guard file **from [`references/auth.ts`](references/auth.ts)** — copy that file's exact contents into `$McpServerDir/src/auth.ts` (or `$McpServerDir/auth.ts` if the server has no `src/`). The full guard source is kept in that reference file to keep this SKILL lightweight.
+
+> The guard is **single-tenant**. It validates signature/aud/iss/exp via `jose`, and additionally
+> enforces `scp = access_as_user` + tenant match — rejecting app-only / client-credentials tokens so
+> a real signed-in user is always present. It accepts all three `aud` forms (bare client-id GUID,
+> `api://<clientId>`, and the App ID URI) and pins the issuer to the single tenant's v2 endpoint.
+> See [`references/sso-explained.md`](references/sso-explained.md) §3.
 
 ### 7b. Insert the guard into the existing `/mcp` POST handler:
 
@@ -431,15 +374,20 @@ if (req.method === "POST" && url.pathname === "/mcp") {
   try {
     claims = await validateBearerToken(req.headers.authorization);
   } catch (err) {
+    // Return a GENERIC message to the caller; log the detailed reason server-side only.
+    console.error("[auth] token rejected:", (err as Error).message);
     res.writeHead(401, { "Content-Type": "application/json" });
     res.end(JSON.stringify({
       jsonrpc: "2.0",
-      error: { code: -32001, message: "Authentication failed: " + (err as Error).message },
+      error: { code: -32001, message: "Authentication required" },
       id: null,
     }));
     return;
   }
-  console.log("[auth] Valid SSO token accepted:", { sid: claims.sid, aud: claims.aud, tid: claims.tid, iss: claims.iss });
+  // Gate the per-request identity log behind a debug flag so it doesn't run in production.
+  if (process.env.SSO_DEBUG === "1") {
+    console.log("[auth] Valid SSO token accepted:", { sid: claims.sid, aud: claims.aud, tid: claims.tid, iss: claims.iss });
+  }
   await claimsStore.run(claims, async () => {
     let body = "";
     for await (const chunk of req) body += chunk;
@@ -499,9 +447,9 @@ atk install --file-path $zipPath
 
 > The tunnel is already running (ui-widget started it). Start the server in a SEPARATE terminal, then verify the guard rejects unauthenticated calls.
 
-Start the server (separate terminal, literal path):
+Start the server (separate terminal, literal path). Set `SSO_DEBUG=1` so the per-request `[auth]` proof line prints (it's gated off by default so it never logs identifiers in production):
 ```powershell
-node dist/index.js
+$env:SSO_DEBUG = "1"; node dist/index.js
 ```
 
 Verify an unauthenticated `/mcp` POST returns 401:
@@ -582,7 +530,7 @@ Write-Host "SSO scratch cleaned — ui-widget logs (tunnel.log/server.log/pids.t
 3. Ask something that triggers a widget tool.
 4. Accept the one-time consent prompt.
 5. Confirm the widget renders with your signed-in identity (claims like `name`/`oid` flow via the SSO token).
-6. In the MCP server terminal, you should see one `[auth] Valid SSO token accepted: { sid, aud, tid, iss }` line per authenticated call — quick proof SSO is live.
+6. In the MCP server terminal, you should see one `[auth] Valid SSO token accepted: { sid, aud, tid, iss }` line per authenticated call — quick proof SSO is live. (This line only prints when the server runs with `SSO_DEBUG=1`, as in Phase 10; it is gated off by default.)
 
 ---
 
