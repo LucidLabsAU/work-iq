@@ -46,20 +46,12 @@ Write-Host "Logged in as: $($signedIn.userPrincipalName) | Tenant: $TenantId ✅
 >
 > The Application ID URI, `access_as_user` scope, and pre-authorization come **later** (Step 3), once ATK generates the URI.
 
-## Step 3 — Single vs Multi-Tenant
+## Step 3 — Tenant Audience (single-tenant)
 
-The default is **single tenant** (`AzureADMyOrg`) — only users in your own org can sign in.
-
-> **Use the ask-questions tool** to confirm:
-> - Header: "Tenant audience"
-> - Question: "Should this app be **single-tenant** (only your organization) or **multi-tenant** (users from any Microsoft Entra organization)? Single-tenant is the default and recommended unless you're shipping to external orgs."
-> - Options: **"Single tenant (default)"** | **"Multi-tenant"**
+This skill's token guard is **single-tenant** — it pins the issuer to your tenant (see [`auth.ts`](auth.ts) and [`sso-explained.md`](sso-explained.md) §3). Register the app as single-tenant (`AzureADMyOrg`). **Multi-tenant (`AzureADMultipleOrgs`) is not supported** by this skill, because a cross-tenant token's issuer (`iss = .../<theirTenant>/v2.0`) would be rejected by the single-tenant guard — supporting it would require `tid`-aware issuer validation.
 
 ```powershell
-# Default single-tenant; set to multi-tenant only if the user chose it.
-$SignInAudience = "AzureADMyOrg"          # single tenant
-# If the user chose multi-tenant:
-# $SignInAudience = "AzureADMultipleOrgs" # multi-tenant
+$SignInAudience = "AzureADMyOrg"   # single-tenant (required by the single-tenant guard)
 Write-Host "Sign-in audience: $SignInAudience"
 ```
 
@@ -68,10 +60,14 @@ Write-Host "Sign-in audience: $SignInAudience"
 > ⛔ **CRITICAL**: You MUST run `az ad app create` below. Do NOT search for existing apps. Do NOT reuse any ClientId from a previous conversation.
 
 ```powershell
-$appJson = az ad app create --display-name "$AppDisplayName" --sign-in-audience $SignInAudience 2>$null
+$appJson = az ad app create --display-name "$AppDisplayName" --sign-in-audience $SignInAudience
 $app = $appJson | ConvertFrom-Json
 $ClientId = $app.appId
 $ObjectId = $app.id
+if ([string]::IsNullOrWhiteSpace($ClientId)) {
+    Write-Host "ERROR: 'az ad app create' did not return an appId. Review the az output above (permissions / tenant policy) and retry — do NOT continue with an empty ClientId." -ForegroundColor Red
+    return
+}
 Write-Host "App created: $AppDisplayName | Client ID: $ClientId"
 ```
 

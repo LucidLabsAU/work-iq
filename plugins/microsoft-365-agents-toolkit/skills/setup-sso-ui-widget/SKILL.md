@@ -215,8 +215,14 @@ if ($yml -notmatch 'oauth/register') {
     } elseif ($yml -match '(?m)^provision:\s*$') {
         # Local yml shape — insert as the FIRST action under the existing provision: stage
         $pidx = [regex]::Match($yml, '(?m)^provision:\s*$').Index
-        $lineEnd = $yml.IndexOf("`n", $pidx) + 1
-        $yml = $yml.Substring(0, $lineEnd) + $action + $yml.Substring($lineEnd)
+        $nl = $yml.IndexOf("`n", $pidx)
+        if ($nl -lt 0) {
+            # 'provision:' is the file's LAST line with no trailing newline — append after it
+            # (guards the IndexOf -> -1 case that would otherwise insert at offset 0 and corrupt the file)
+            $yml = $yml.TrimEnd() + "`r`n" + $action
+        } else {
+            $yml = $yml.Substring(0, $nl + 1) + $action + $yml.Substring($nl + 1)
+        }
     } else {
         # No provision stage yet — create one
         $yml = $yml.TrimEnd() + "`r`n`r`nprovision:`r`n" + $action
@@ -275,7 +281,7 @@ Write-Host "App ID URI: $AppIdUri ✅"
 ## Phase 5 — Step 3: Update the Entra ID App (EXECUTE)
 
 Read and execute **every step** in `references/entra-app-update.md` using `$AppIdUri`.
-This sets the Application ID URI, exposes `access_as_user`, pre-authorizes M365 Copilot, adds `User.Read`, and submits admin consent (see `references/admin-consent.md`).
+This sets the Application ID URI, exposes `access_as_user`, and pre-authorizes M365 Copilot. Graph `User.Read` + admin consent are **optional** — only needed later for OBO/Graph, not for pure SSO identity validation.
 
 After completion you MUST have `$ScopeId` set and the app verified.
 

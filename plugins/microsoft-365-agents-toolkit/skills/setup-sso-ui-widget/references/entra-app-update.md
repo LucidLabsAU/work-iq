@@ -130,8 +130,11 @@ Write-Host "Pre-authorized M365 Copilot client ✅"
 
 > **Note**: For a Declarative Agent, **M365 Copilot (`ab3be6b7-…`) is the only client that needs pre-authorization** — keep the list to this single entry. Do not add Teams/Office/Outlook client IDs; they are not required for a DA and only widen the app's trust surface.
 
-## Step 4 — Add User.Read Permission (default)
+## Step 4 — Add User.Read Permission (OPTIONAL — only for Graph/OBO)
 
+> **Skip this for pure SSO.** Validating the signed-in user's identity (this skill's scope — no OBO) needs **no** Graph permission; the claims come from the token itself. Only add `User.Read` if you plan to call Microsoft Graph on the user's behalf later (OBO). Adding it also triggers the admin-consent requirement in Step 5 that pure SSO otherwise doesn't need.
+
+If (and only if) you need Graph/OBO, add it:
 ```powershell
 $existingPerms = az ad app show --id $ClientId --query "requiredResourceAccess" -o json 2>$null | ConvertFrom-Json
 $hasUserRead = $existingPerms | Where-Object { $_.resourceAccess | Where-Object { $_.id -eq "e1fe6dd8-ba31-4d61-89e7-88639da4683d" } }
@@ -143,9 +146,9 @@ if (-not $hasUserRead) {
 }
 ```
 
-## Step 5 — Admin Consent
+## Step 5 — Admin Consent (only if you added a Graph permission in Step 4)
 
-Read and follow [admin-consent.md](admin-consent.md) for the appropriate tenant-specific flow.
+Pure SSO needs **no** admin consent — M365 Copilot is already pre-authorized for `access_as_user` (Step 3), so no consent prompt is required just to validate identity. **Only if** you added `User.Read` (or another Graph permission) in Step 4, read and follow [admin-consent.md](admin-consent.md) for the appropriate tenant-specific flow.
 
 ## Step 6 — Verify App Registration
 
@@ -153,7 +156,7 @@ Read and follow [admin-consent.md](admin-consent.md) for the appropriate tenant-
 az ad app show --id $ClientId --query "{name:displayName, appIdUri:identifierUris[0], tokenVersion:api.requestedAccessTokenVersion, redirectUris:web.redirectUris, scopes:api.oauth2PermissionScopes[].value, preAuthCount:length(api.preAuthorizedApplications), graphPerms:length(requiredResourceAccess)}" -o json
 ```
 
-Expected: `appIdUri` = the ATK-generated URI (`$AppIdUri`), `tokenVersion` = `2`, scopes = `["access_as_user"]`, preAuthCount = `1` (M365 Copilot), graphPerms = `1`.
+Expected: `appIdUri` = the ATK-generated URI (`$AppIdUri`), `tokenVersion` = `2`, scopes = `["access_as_user"]`, preAuthCount = `1` (M365 Copilot), graphPerms = `0` (or `1` if you added `User.Read` for OBO in Step 4).
 
 ---
 
