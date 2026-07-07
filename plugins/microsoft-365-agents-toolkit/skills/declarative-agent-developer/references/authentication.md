@@ -94,6 +94,8 @@ Add an `oauth/register` step to **both** `m365agents.yml` and `m365agents.local.
 
 > Pre-seed `AAD_APP_CLIENT_ID=<appId>` and empty `<PREFIX>_SSO_AUTH_ID=` / `<PREFIX>_SSO_APP_ID_URI=` in your env file **before** provisioning. Run `atk provision` (use `--env local` for local projects, which runs `m365agents.local.yml`), then read the generated `<PREFIX>_SSO_AUTH_ID` and `<PREFIX>_SSO_APP_ID_URI` back from the env file.
 
+> **Concrete key names used by the `setup-sso-ui-widget` skill:** `<PREFIX>` and the middle segment are project-chosen. Wherever this doc shows `<PREFIX>_SSO_AUTH_ID` / `<PREFIX>_SSO_APP_ID_URI`, that skill's automation concretely uses **`MCP_DA_OAUTH_AUTH_ID`** (the `configurationId`) and **`MCP_DA_OAUTH_APP_ID_URI`** (the `applicationIdUri`).
+
 ### Step S3 — Link the Application ID URI Back to the Entra App
 
 `oauth/register` **outputs** the Application ID URI (`<PREFIX>_SSO_APP_ID_URI`). Read it back from the env file and set it as the app's identifier URI so the ATK OAuth config and the Entra app point at the same identity:
@@ -524,7 +526,7 @@ reference are identical; only the manifest shape differs.
 | `registration_endpoint` returns 404 | DCR not supported — ask user for credentials manually |
 | Token refresh fails | Verify `refreshUrl` matches `token_endpoint` from well-known metadata |
 | `<PREFIX>_MCP_AUTH_ID` empty after provision | Check that `oauth/register` step is in `m365agents.yml` and credentials are correct |
-| "Invalid redirect URI" during OAuth | Ensure redirect URI is exactly `https://teams.microsoft.com/api/platform/v1.0/oAuthRedirect` |
+| "Invalid redirect URI" during OAuth | For **SSO (MicrosoftEntra)** use `https://teams.microsoft.com/api/platform/v1.0/oAuthConsentRedirect`; for **third-party OAuth** use `https://teams.microsoft.com/api/platform/v1.0/oAuthRedirect` |
 | PKCE errors | Some providers don't support PKCE — set `isPKCEEnabled: false` |
 | `<PREFIX>_SSO_AUTH_ID` / `_APP_ID_URI` empty after provision (SSO) | Ensure `oauth/register` uses `identityProvider: MicrosoftEntra` and is present in the env's lifecycle file (`m365agents.local.yml` for `--env local`) |
 | 401 in Copilot after SSO setup | Backend token validation must accept `aud = <App ID URI>` and the issuer for your tenant; confirm the app exposes `access_as_user` and Copilot is pre-authorized |
