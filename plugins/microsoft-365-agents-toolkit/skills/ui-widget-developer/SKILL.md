@@ -109,6 +109,8 @@ If the generated widget does not include React entry files (for example `widgets
 
 **NO RAW HTML-ONLY WIDGETS (DEFAULT):** Do not implement app content directly with static HTML templates and inline JS as the final widget solution. A minimal shell HTML file is allowed only as a loader for built React assets. Raw/self-contained HTML-only widgets are allowed only when the user explicitly requests a non-React prototype.
 
+**SSO HANDOFF (REQUIRED AT COMPLETION):** Once the ui-widget agent is fully scaffolded, running, and provisioned, your final completion summary MUST end by offering the optional SSO next step — see [Next Step — Add SSO](#next-step--add-sso-optional). List it in your "next steps" and ask the user if they want to wire Entra SSO via the `setup-sso-ui-widget` skill. Do NOT omit this offer, even if you also list other suggestions.
+
 **BACKGROUND PROCESSES:** MCP server and devtunnel MUST be spawned as independent OS processes — NOT run inside the agent's shell session. `isBackground: true`, `mode: "async"`, and `Start-Job` all run inside the agent's shell session and will be killed between messages. The only reliable approach is to spawn a detached OS process.
 
 **Windows — use `Start-Process -WindowStyle Hidden`:**
