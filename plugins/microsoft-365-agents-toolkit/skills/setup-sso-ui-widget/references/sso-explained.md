@@ -121,20 +121,20 @@ A decoded token Copilot sends to your `/mcp` endpoint (values are illustrative):
 { "typ": "JWT", "alg": "RS256", "kid": "aFkmKVFc-4WV6sXCBvNZkXI505Y" }
 // Payload
 {
-  "aud": "d2e00e92-5b1c-4a99-a431-26ae0c3ff285", // YOUR app (client-id GUID form — not api://)
-  "iss": "https://login.microsoftonline.com/0c2614e6-a76a-433c-80fd-88ac91e67b9d/v2.0", // tenant issuer
+  "aud": "11111111-1111-1111-1111-111111111111", // YOUR app (client-id GUID form — not api://)
+  "iss": "https://login.microsoftonline.com/22222222-2222-2222-2222-222222222222/v2.0", // tenant issuer
   "iat": 1782762638, "nbf": 1782762638, "exp": 1782767566, // validity window (~82 min)
   "acrs": ["p1"],                                  // conditional-access auth context
   "azp": "ab3be6b7-f5df-413d-ac2d-abf1e3fd9c0b",   // the CLIENT that got the token = M365 Copilot
   "azpacr": "2",                                   // how that client authenticated (2 = secret/cert)
-  "name": "Eric Scherlinger",                      // display name
-  "oid": "38e4e8e4-3ad3-4f2b-bd67-1fbe1380b007",   // STABLE user id — key your data on this
+  "name": "Maya Chen",                             // display name
+  "oid": "33333333-3333-3333-3333-333333333333",   // STABLE user id — key your data on this
   "preferred_username": "user@contoso.onmicrosoft.com",   // UPN / email-like (mutable — don't key on it)
   "scp": "access_as_user",                         // the delegated scope you exposed
-  "sid": "005e548a-b38a-2e1e-61a0-bc3bc8f83271",   // session id
-  "sub": "qNBDTwfvO2lqjAyyNp6PO3s2TLcQG_yCDuZnR4l6PAM", // per-app pseudonymous user id
-  "tid": "0c2614e6-a76a-433c-80fd-88ac91e67b9d",   // tenant id (must match issuer)
-  "uti": "vqBD54MOlkqQCQopQzdZAA",                 // token identifier (opaque)
+  "sid": "44444444-4444-4444-4444-444444444444",   // session id
+  "sub": "AAABBBcccDDDeeeFFFgggHHHiiiJJJkkkLLLmmm", // per-app pseudonymous user id
+  "tid": "22222222-2222-2222-2222-222222222222",   // tenant id (must match issuer)
+  "uti": "AAAAAAAAAAAAAAAAAAAAAA",                 // token identifier (opaque)
   "ver": "2.0"
   // aio, rh, xms_ftd are internal Entra values — ignore them
 }
@@ -253,7 +253,7 @@ they may do. If you need role/permission checks, derive them from claims (e.g. `
 | **401 in Copilot** (but local 401 check passes) | `aud`/`iss` mismatch: audience form not accepted, or wrong tenant | `env/.env.local` `APP_ID_URI` / `CLIENT_ID` / `TENANT_ID`; confirm the server loads that file |
 | Provision runs only a few steps, **no `MCP_DA_OAUTH_*` keys** written | `oauth/register` injected into the wrong yml | Phase 4a — inject into `m365agents.local.yml` for `--env local`, not `m365agents.yml` |
 | Browser preflight drops the token | `Authorization` not in `Access-Control-Allow-Headers` | Phase 7c — add `Authorization` to the CORS header list |
-| Consent prompt loops / access denied | Admin consent not granted | Grant admin consent (see the admin-consent reference) |
+| Consent prompt loops / access denied | Admin consent not granted | Grant admin consent for the tenant (Azure Portal → your app → API permissions → Grant admin consent) — only relevant if you added a Graph permission (OBO) |
 | `TENANT_ID not configured` at first request | Env read eagerly at module top-level, or wrong env file | §4 lazy-config note; verify `dotenv.config({ path })` target |
 
 **A healthy run** shows exactly one line per authenticated call in the server terminal:

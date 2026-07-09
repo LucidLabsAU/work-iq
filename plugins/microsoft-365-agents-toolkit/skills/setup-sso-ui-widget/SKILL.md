@@ -51,55 +51,22 @@ description: >
 
 ## ⛔ Phase 0 — Workspace Check (MANDATORY FIRST STEP)
 
-This skill expects a project produced by `ui-widget-developer`. Detect that layout:
+This skill expects a project produced by `ui-widget-developer`.
 
-```powershell
-$AppPackageDir = if (Test-Path "appPackage/declarativeAgent.json") { "appPackage" }
-                 elseif (Test-Path "DeclarativeAgent/declarativeAgent.json") { "DeclarativeAgent" }
-                 else { $null }
-$hasAtk         = (Test-Path "m365agents.yml") -or (Test-Path "teamsapp.yml")
-$mcpPluginPath  = if ($AppPackageDir) { Join-Path $AppPackageDir "mcpPlugin.json" } else { $null }
-$hasMcpPlugin   = $mcpPluginPath -and (Test-Path $mcpPluginPath)
-$hasAiPlugin    = $AppPackageDir -and (Test-Path (Join-Path $AppPackageDir "ai-plugin.json"))
-
-# Locate the MCP server folder (the dir that holds src/index.* and @modelcontextprotocol/sdk)
-$McpServerDir = $null
-foreach ($cand in @("mcp-server", "server", ".")) {
-    $pkg = Join-Path $cand "package.json"
-    if ((Test-Path $pkg)) {
-        try {
-            $p = Get-Content $pkg -Raw | ConvertFrom-Json
-            $deps = @()
-            if ($p.dependencies)    { $deps += $p.dependencies.PSObject.Properties.Name }
-            if ($p.devDependencies) { $deps += $p.devDependencies.PSObject.Properties.Name }
-            if ($deps -contains "@modelcontextprotocol/sdk") { $McpServerDir = $cand; break }
-        } catch {}
-    }
-}
-
-Write-Host "AppPackageDir=$AppPackageDir hasAtk=$hasAtk hasMcpPlugin=$hasMcpPlugin hasAiPlugin=$hasAiPlugin McpServerDir=$McpServerDir"
-
-if (-not ($hasAtk -and $AppPackageDir -and $hasMcpPlugin -and $McpServerDir)) {
-    Write-Host "ERROR: This does not look like a ui-widget-developer project." -ForegroundColor Red
-    Write-Host "Expected: m365agents.yml + $AppPackageDir/mcpPlugin.json + an MCP server folder with @modelcontextprotocol/sdk." -ForegroundColor Red
-    if ($hasAiPlugin -and -not $hasMcpPlugin) {
-        Write-Host "Found ai-plugin.json instead of mcpPlugin.json — this skill is for the mcpPlugin.json (OAI Apps) layout." -ForegroundColor Yellow
-    }
-    Write-Host "Build the agent first with the ui-widget-developer skill (OAI Apps path), then re-run this skill." -ForegroundColor Yellow
-    return
-}
-Write-Host "ui-widget-developer project detected ✅  (server: $McpServerDir)"
-```
-
-**Tell the user:**
-> **Detected your ui-widget agent.** I'll add Entra SSO without touching your widget code — register an Entra app, reuse your existing dev tunnel, add a small token-validation guard to your MCP server, wire the auth into `mcpPlugin.json`, then sideload and verify. No OBO.
+▶ Run the **Phase 0** step in [`references/detect-and-inputs.md`](references/detect-and-inputs.md) — it detects the ui-widget layout and STOPS if the project isn't a ui-widget-developer output.
 
 ---
 
 ## Phase 1 — Prerequisites (EXECUTE)
 
+> **Windows only** — refresh PATH in the current PowerShell session (skip on macOS/Linux):
 ```powershell
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+```
+
+**Set `$SsoScripts`** to this skill's `scripts/` folder (absolute path). Every phase runs its logic via `pwsh -NoProfile -File "$SsoScripts/<name>.ps1"` — the scripts carry state through `env/.env.local`, so you rarely pass arguments:
+```powershell
+$SsoScripts = "<absolute path to this skill>/scripts"
 ```
 
 | Tool | Check | Auto-install |
@@ -115,378 +82,25 @@ After installing any tool, refresh PATH with the snippet above. Tag CLI usage on
 
 ## Phase 2 — Gather Inputs + Reuse Existing Tunnel (EXECUTE)
 
-### 2a. App display name (for the Entra app)
-
-```powershell
-$BaseAppName = (Get-Content (Join-Path $AppPackageDir "manifest.json") -Raw | ConvertFrom-Json).name.short
-if (-not $BaseAppName) { $BaseAppName = (Get-Content (Join-Path $AppPackageDir "declarativeAgent.json") -Raw | ConvertFrom-Json).name }
-$BaseAppName = ($BaseAppName -replace '\$\{\{[^}]+\}\}','' -replace '[^A-Za-z0-9-]','')
-if (-not $BaseAppName) { $BaseAppName = "uiwidget-agent" }
-$userAlias = ($env:USERNAME); if (-not $userAlias) { $userAlias = "user" }
-$userAlias = $userAlias.ToLower(); if ($userAlias -match '\\') { $userAlias = $userAlias.Split('\')[-1] }
-$suffix = -join ((48..57)+(97..122) | Get-Random -Count 4 | ForEach-Object {[char]$_})
-$AppDisplayName = "$BaseAppName-$userAlias-$suffix"
-Write-Host "App: $AppDisplayName"
-```
-
-### 2b. Read the EXISTING tunnel + port from `env/.env.local` (DO NOT create a new tunnel)
-
-```powershell
-$envLocal = "env/.env.local"
-$BaseUrl = $null; $TunnelHost = $null; $TunnelName = $null; $Port = 3001
-
-if (Test-Path $envLocal) {
-    $lines = Get-Content $envLocal
-    $get = { param($k) (($lines | Where-Object { $_ -match "^$k=" }) -replace "^$k=","").Trim() }
-    $existingUrl = & $get "MCP_SERVER_URL"
-    $existingDom = & $get "MCP_SERVER_DOMAIN"
-    $TunnelName  = & $get "DEVTUNNEL_NAME"
-    $p           = & $get "DEVTUNNEL_PORT"
-    if ($p) { $Port = [int]$p }
-    if ($existingUrl) { $BaseUrl = $existingUrl; $TunnelHost = if ($existingDom) { $existingDom } else { $existingUrl -replace '^https?://','' -replace '/.*','' } }
-}
-
-if ($BaseUrl) {
-    Write-Host "Reusing existing tunnel from env/.env.local → $BaseUrl (port $Port, name '$TunnelName') ✅"
-    $BackendIsLocal = $true
-} else {
-    Write-Host "No MCP_SERVER_URL found in env/.env.local — the ui-widget devtunnel may not have been started yet." -ForegroundColor Yellow
-    Write-Host "Start it first: in the project root run the ui-widget tunnel script (npm run tunnel / tunnel:win), then re-run this skill." -ForegroundColor Yellow
-    Write-Host "Falling back to creating a tunnel via the shared reference (only if you proceed)." -ForegroundColor Yellow
-    $BackendIsLocal = $true
-}
-```
-
-> **If `$BaseUrl` is still empty after this step**, read and execute `references/dev-tunnel.md` to create ONE tunnel on `$Port`, then capture `$TunnelName`, `$BaseUrl`, `$TunnelHost`. Otherwise SKIP tunnel creation entirely — the tunnel is already running.
+▶ Run the **Phase 2** step in [`references/detect-and-inputs.md`](references/detect-and-inputs.md) — derives the Entra app display name and reuses the EXISTING dev tunnel from `env/.env.local` (never creates a second one).
 
 ---
 
-## Phase 3 — Step 1: Create the Entra ID App (EXECUTE)
+## Phase 3–5 — Register + Configure the Entra App (EXECUTE)
 
-Read and execute **every step** in `references/entra-app-registration.md`.
-
-After completion you MUST have: `$ClientId`, `$ObjectId`, `$TenantId`.
+▶ Execute [`references/register-app.md`](references/register-app.md) — **Phase 3** creates the single-tenant Entra app + service principal + redirect URI, **Phase 4** injects `oauth/register` and provisions with `--env local` (yielding the Auth ID + Application ID URI), and **Phase 5** sets the App ID URI, v2 tokens, the `access_as_user` scope, and pre-authorizes M365 Copilot. Graph `User.Read` + admin consent stay **opt-in** (OBO only).
 
 ---
 
-## Phase 4 — Step 2: ATK OAuth Registration (MicrosoftEntra), env = `local` (EXECUTE)
+## Phase 6–8 — Wire SSO + Inject Guard + Write Env (EXECUTE)
 
-> ui-widget projects provision with **`--env local`** and keep variables in `env/.env.local`. Use that env throughout (NOT `dev`).
-
-### 4a. Ensure the `oauth/register` action exists in the ATK yml:
-
-> **`--env local` runs the LOCAL lifecycle file.** ATK executes `m365agents.local.yml` (not `m365agents.yml`) for `--env local`. The `oauth/register` action MUST be injected into the `.local.yml`, or provision will silently skip it — you'll see the run execute only a handful of steps and **no `MCP_DA_OAUTH_*` keys** get written to `env/.env.local`. Always target the `.local.yml` when it exists.
-
-```powershell
-$ymlPath = if (Test-Path "m365agents.local.yml") { "m365agents.local.yml" }
-           elseif (Test-Path "teamsapp.local.yml") { "teamsapp.local.yml" }
-           elseif (Test-Path "m365agents.yml") { "m365agents.yml" }
-           else { "teamsapp.yml" }
-$yml = Get-Content $ymlPath -Raw
-
-if ($yml -match 'oauth/register') {
-    $authIdKey   = ([regex]::Match($yml, 'configurationId:\s*([A-Z0-9_]+)')).Groups[1].Value
-    $appIdUriKey = ([regex]::Match($yml, 'applicationIdUri:\s*([A-Z0-9_]+)')).Groups[1].Value
-}
-if (-not $authIdKey)   { $authIdKey   = "MCP_DA_OAUTH_AUTH_ID" }
-if (-not $appIdUriKey) { $appIdUriKey = "MCP_DA_OAUTH_APP_ID_URI" }
-
-if ($yml -notmatch 'oauth/register') {
-    $action = @'
-  - uses: oauth/register
-    with:
-      name: daSso
-      flow: authorizationCode
-      appId: ${{TEAMS_APP_ID}}
-      clientId: ${{AAD_APP_CLIENT_ID}}
-      identityProvider: MicrosoftEntra
-      baseUrl: ${{MCP_SERVER_URL}}
-    writeToEnvironmentFile:
-      configurationId: MCP_DA_OAUTH_AUTH_ID
-      applicationIdUri: MCP_DA_OAUTH_APP_ID_URI
-
-'@
-    $marker = "- uses: teamsApp/zipAppPackage"
-    $idx = $yml.IndexOf($marker)
-    if ($idx -ge 0) {
-        # Main yml shape — insert just before the zipAppPackage action
-        $lineStart = $yml.LastIndexOf("`n", $idx) + 1
-        $yml = $yml.Substring(0, $lineStart) + $action + $yml.Substring($lineStart)
-    } elseif ($yml -match '(?m)^provision:\s*$') {
-        # Local yml shape — insert as the FIRST action under the existing provision: stage
-        $pidx = [regex]::Match($yml, '(?m)^provision:\s*$').Index
-        $nl = $yml.IndexOf("`n", $pidx)
-        if ($nl -lt 0) {
-            # 'provision:' is the file's LAST line with no trailing newline — append after it
-            # (guards the IndexOf -> -1 case that would otherwise insert at offset 0 and corrupt the file)
-            $yml = $yml.TrimEnd() + "`r`n" + $action
-        } else {
-            $yml = $yml.Substring(0, $nl + 1) + $action + $yml.Substring($nl + 1)
-        }
-    } else {
-        # No provision stage yet — create one
-        $yml = $yml.TrimEnd() + "`r`n`r`nprovision:`r`n" + $action
-    }
-    Set-Content $ymlPath -Value $yml -Encoding UTF8
-    $authIdKey = "MCP_DA_OAUTH_AUTH_ID"; $appIdUriKey = "MCP_DA_OAUTH_APP_ID_URI"
-    Write-Host "Injected oauth/register (MicrosoftEntra) into $ymlPath ✅"
-}
-Write-Host "Auth ID key: $authIdKey | API URI key: $appIdUriKey"
-```
-
-### 4b. Pre-seed env vars in `env/.env.local` (reuse our az-created app; keep the existing tunnel URL):
-
-```powershell
-if (-not (Test-Path "env")) { New-Item -ItemType Directory -Path "env" | Out-Null }
-$envFile = "env/.env.local"
-$content = if (Test-Path $envFile) { Get-Content $envFile } else { @() }
-
-function Set-EnvLine([string[]]$lines, [string]$key, [string]$val) {
-    if ($lines | Where-Object { $_ -match "^$key=" }) {
-        return ($lines | ForEach-Object { if ($_ -match "^$key=") { "$key=$val" } else { $_ } })
-    } else { return $lines + "$key=$val" }
-}
-
-$content = Set-EnvLine $content "AAD_APP_CLIENT_ID" $ClientId
-$content = Set-EnvLine $content $authIdKey   ""        # filled by provision
-$content = Set-EnvLine $content $appIdUriKey ""        # filled by provision
-if (-not ($content | Where-Object { $_ -match "^TEAMS_APP_ID=" })) { $content += "TEAMS_APP_ID=" }
-$content | Set-Content $envFile -Encoding UTF8
-Write-Host "Pre-seeded env/.env.local (AAD_APP_CLIENT_ID + oauth keys) ✅"
-```
-
-### 4c. Ensure ATK login, then provision:
-
-```powershell
-if ((atk auth list 2>&1) -notmatch "microsoft.com") { atk auth login m365 }
-atk provision --env local --interactive false
-```
-
-### 4d. Read the generated Auth ID + Application ID URI:
-
-```powershell
-$envLines = Get-Content "env/.env.local"
-$AuthId   = (($envLines | Where-Object { $_ -match "^$authIdKey=" })   -replace "^$authIdKey=","").Trim()
-$AppIdUri = (($envLines | Where-Object { $_ -match "^$appIdUriKey=" }) -replace "^$appIdUriKey=","").Trim()
-if ([string]::IsNullOrWhiteSpace($AuthId) -or [string]::IsNullOrWhiteSpace($AppIdUri)) {
-    Write-Host "ERROR: ATK did not emit Auth ID / App ID URI. Re-run 'atk provision --env local --interactive false' and check env/.env.local." -ForegroundColor Red
-    return
-}
-Write-Host "Auth ID: $AuthId ✅"
-Write-Host "App ID URI: $AppIdUri ✅"
-```
+▶ Execute [`references/wire-and-guard.md`](references/wire-and-guard.md) — **Phase 6** flips `mcpPlugin.json` runtime auth to `OAuthPluginVault` (+ conditional starters), **Phase 7** adds `jose`, copies the hardened guard from [`references/auth.ts`](references/auth.ts), and inserts it into the `/mcp` handler (+ CORS), and **Phase 8** writes `TENANT_ID` / `CLIENT_ID` / `APP_ID_URI` for the server. Includes the Azure/Easy Auth deployment note.
 
 ---
 
-## Phase 5 — Step 3: Update the Entra ID App (EXECUTE)
+## Phase 9–11 — Build, Verify, Clean Up (EXECUTE)
 
-Read and execute **every step** in `references/entra-app-update.md` using `$AppIdUri`.
-This sets the Application ID URI, exposes `access_as_user`, and pre-authorizes M365 Copilot. Graph `User.Read` + admin consent are **optional** — only needed later for OBO/Graph, not for pure SSO identity validation.
-
-After completion you MUST have `$ScopeId` set and the app verified.
-
----
-
-## Phase 6 — Wire SSO into `mcpPlugin.json` (EXECUTE)
-
-The ui-widget runtime ships with `auth: { "type": "None" }`. Switch it to the SSO registration.
-
-```powershell
-$mcp = Get-Content $mcpPluginPath -Raw | ConvertFrom-Json -Depth 30
-foreach ($rt in $mcp.runtimes) {
-    if ($rt.type -eq "RemoteMCPServer") {
-        $rt.auth = [pscustomobject]@{ type = "OAuthPluginVault"; reference_id = $AuthId }
-        # spec.url stays as the ${{MCP_SERVER_URL}}/mcp placeholder so ATK keeps resolving it from env/.env.local.
-    }
-}
-$mcp | ConvertTo-Json -Depth 30 | Set-Content $mcpPluginPath -Encoding UTF8
-Write-Host "mcpPlugin.json: runtime auth → OAuthPluginVault ($AuthId) ✅"
-```
-
-> Do NOT hardcode the tunnel URL into `spec.url`. Leave the `${{MCP_SERVER_URL}}/mcp` placeholder; ATK fills it from `env/.env.local` (the value the ui-widget tunnel script wrote).
-
----
-
-## Phase 6b — Add SSO-aware Conversation Starters (CONDITIONAL — EXECUTE)
-
-> **Only add identity starters when the agent has NONE of its own.** SSO in this skill is a guard that wraps *every* tool — so any of the widget's own starters (e.g., "Weather in Seattle") already proves SSO the moment its tool call returns `200 OK` (the token was validated first) and the `[auth] Valid SSO token accepted` line prints in the server terminal. Do NOT clobber the widget's tool-matched starters with generic "Show my profile" ones that no widget tool can answer. Add the two identity starters ONLY as a fallback when the widget defined no starters, so a fresh agent still has something to click. The real proof is the guard + the `[auth]` log, not the starter text.
-
-```powershell
-$daJsonPath = Join-Path $AppPackageDir "declarativeAgent.json"
-if (Test-Path $daJsonPath) {
-    $daJson = Get-Content $daJsonPath -Raw | ConvertFrom-Json
-    $existing = @($daJson.conversation_starters)
-    if ($existing.Count -gt 0) {
-        Write-Host "Widget already defines $($existing.Count) conversation_starter(s) — leaving them intact (they exercise the SSO-guarded tool). SSO proof = [auth] log + 200 OK tool call. ✅"
-    } else {
-        $daJson | Add-Member -NotePropertyName conversation_starters -NotePropertyValue @(
-            [pscustomobject]@{ title = "Show my profile"; text = "Show my profile" },
-            [pscustomobject]@{ title = "Greet by name";   text = "Greet me by name" }
-        ) -Force
-        $daJson | ConvertTo-Json -Depth 10 | Set-Content $daJsonPath -Encoding UTF8
-        Write-Host "No existing starters — added two identity starters as SSO proof fallback ✅"
-    }
-} else {
-    Write-Host "WARNING: $daJsonPath not found; skipping conversation_starters update." -ForegroundColor Yellow
-}
-```
-
-> **Note on provisioning:** if a later `atk provision` regenerates `declarativeAgent.json` from the widget template, the widget's own starters win — which is fine, because they still flow through the SSO guard. Regardless of starters, the authoritative SSO proof is the `[auth] Valid SSO token accepted: { sid, aud, tid, iss }` line in the MCP server terminal (keep that window open; run the server with `SSO_DEBUG=1` so the line prints) plus the `200 OK` on the tool call in Copilot's Agent debug info.
-
----
-
-## Phase 7 — Inject Minimal JWKS Guard into the MCP Server (EXECUTE — Option A, no express)
-
-> Minimal-touch: add ONE new file + a few lines in the existing server. Do NOT convert to express.
-
-### 7a. Add `jose` to the MCP server deps + write the auth helper:
-
-Install `jose` (idempotent — safe to re-run):
-```powershell
-npm --prefix $McpServerDir install jose@^5 --save
-```
-
-Then create the guard file **from [`references/auth.ts`](references/auth.ts)** — copy that file's exact contents into `$McpServerDir/src/auth.ts` (or `$McpServerDir/auth.ts` if the server has no `src/`). The full guard source is kept in that reference file to keep this SKILL lightweight.
-
-> The guard is **single-tenant**. It validates signature/aud/iss/exp via `jose`, and additionally
-> enforces `scp = access_as_user` + tenant match — rejecting app-only / client-credentials tokens so
-> a real signed-in user is always present. It accepts all three `aud` forms (bare client-id GUID,
-> `api://<clientId>`, and the App ID URI) and pins the issuer to the single tenant's v2 endpoint.
-> See [`references/sso-explained.md`](references/sso-explained.md) §3.
-
-### 7b. Insert the guard into the existing `/mcp` POST handler:
-
-> Open the MCP server entry file (`$McpServerDir/src/index.ts` or equivalent). Find the branch that handles `POST /mcp` (look for `url.pathname === "/mcp"` and `req.method === "POST"`). Insert the guard as the FIRST statements inside that branch, and wrap the existing handling in `claimsStore.run(...)`.
-
-Add the import near the top of the file:
-```typescript
-import { validateBearerToken, claimsStore } from "./auth.js";
-```
-
-Then transform the POST `/mcp` branch from:
-```typescript
-if (req.method === "POST" && url.pathname === "/mcp") {
-  let body = "";
-  for await (const chunk of req) body += chunk;
-  const parsedBody = JSON.parse(body);
-  await handleMcpRequest(req, res, parsedBody);
-  return;
-}
-```
-into (guard first, then run the original logic inside the claims scope):
-```typescript
-if (req.method === "POST" && url.pathname === "/mcp") {
-  let claims;
-  try {
-    claims = await validateBearerToken(req.headers.authorization);
-  } catch (err) {
-    // Return a GENERIC message to the caller; log the detailed reason server-side only.
-    console.error("[auth] token rejected:", (err as Error).message);
-    res.writeHead(401, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({
-      jsonrpc: "2.0",
-      error: { code: -32001, message: "Authentication required" },
-      id: null,
-    }));
-    return;
-  }
-  // Gate the per-request identity log behind a debug flag so it doesn't run in production.
-  if (process.env.SSO_DEBUG === "1") {
-    console.log("[auth] Valid SSO token accepted:", { sid: claims.sid, aud: claims.aud, tid: claims.tid, iss: claims.iss });
-  }
-  await claimsStore.run(claims, async () => {
-    let body = "";
-    for await (const chunk of req) body += chunk;
-    const parsedBody = JSON.parse(body);
-    await handleMcpRequest(req, res, parsedBody);
-  });
-  return;
-}
-```
-
-> Tools can read the signed-in user's claims anywhere via `claimsStore.getStore()` (e.g., `name`, `preferred_username`, `oid`, `tid`). This proves SSO works without OBO.
-
-### 7c. Allow the `Authorization` header through CORS:
-
-> In the same file, find where `Access-Control-Allow-Headers` is set for `/mcp` (preflight + responses) and ADD `Authorization` to the list (e.g., `"Content-Type, mcp-session-id, Last-Event-ID, mcp-protocol-version, Authorization"`). Without this, browser-originated preflights would drop the token.
-
----
-
-## Phase 8 — Write SSO env for the server (EXECUTE)
-
-The ui-widget server already loads `env/.env.local` via dotenv, so write the audience there.
-
-```powershell
-$envFile = "env/.env.local"
-$content = Get-Content $envFile
-$content = Set-EnvLine $content "TENANT_ID"  $TenantId
-$content = Set-EnvLine $content "CLIENT_ID"  $ClientId
-$content = Set-EnvLine $content "APP_ID_URI" $AppIdUri
-$content | Set-Content $envFile -Encoding UTF8
-Write-Host "env/.env.local: TENANT_ID, CLIENT_ID, APP_ID_URI written ✅ (server audience = $AppIdUri)"
-```
-
-> If the MCP server loads a DIFFERENT env file (check its `dotenv.config({ path: ... })`), write these three keys into THAT file instead.
-
----
-
-## Phase 9 — Build, Re-provision, Validate, Sideload (EXECUTE)
-
-```powershell
-# Build the server with the new guard
-Push-Location $McpServerDir
-try { npm install; npm run build; if ($LASTEXITCODE -ne 0) { Write-Host "Build failed — fix TS errors." -ForegroundColor Red; return } }
-finally { Pop-Location }
-
-# Rebuild the app package with the patched mcpPlugin.json auth + sideload
-atk provision --env local --interactive false
-
-$zipPath = if (Test-Path "$AppPackageDir/build/appPackage.zip") { "./$AppPackageDir/build/appPackage.zip" }
-           else { (Get-ChildItem -Recurse -Filter "appPackage*.zip" | Select-Object -First 1).FullName }
-atk validate --package-file $zipPath
-atk install --file-path $zipPath
-```
-
----
-
-## Phase 10 — Start + Verify 401 (EXECUTE)
-
-> The tunnel is already running (ui-widget started it). Start the server in a SEPARATE terminal, then verify the guard rejects unauthenticated calls.
-
-Start the server (separate terminal, literal path). Set `SSO_DEBUG=1` so the per-request `[auth]` proof line prints (it's gated off by default so it never logs identifiers in production):
-```powershell
-$env:SSO_DEBUG = "1"; node dist/index.js
-```
-
-Verify an unauthenticated `/mcp` POST returns 401:
-```powershell
-try {
-    $body = '{"jsonrpc":"2.0","method":"initialize","id":1,"params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
-    Invoke-WebRequest -Uri "http://localhost:$Port/mcp" -Method POST -ContentType "application/json" -Body $body | Out-Null
-    Write-Host "WARNING: Got 200 — auth not enforced. Check Phase 7 insertion." -ForegroundColor Yellow
-} catch {
-    $code = $_.Exception.Response.StatusCode.value__
-    if ($code -eq 401) { Write-Host "VERIFIED: 401 Unauthorized — SSO guard working ✅" -ForegroundColor Green }
-    else { Write-Host "Got HTTP $code" -ForegroundColor Yellow }
-}
-```
-
----
-
-## Phase 11 — Clean Up SSO Scratch Only (EXECUTE)
-
-> Remove only transient files THIS SSO flow could have produced. **Do NOT touch the ui-widget background-process files** (`tunnel.log`, `tunnel-err.log`, `server.log`, `server-err.log`, `pids.txt`) — those belong to the `ui-widget-developer` skill and must stay. Never delete source, config, env, or build outputs.
-
-```powershell
-# SSO-related scratch only (this skill shouldn't create these, but sweep defensively):
-$scratch  = @("server-sso.out.log","server-sso.err.log","server-pid.txt","sso-state.json")
-$patterns = @("sso-step*.ps1","sso-*.log","sso-*.txt","sso-precheck*","sso-provision*.log","sso-az.txt","sso-atkcheck.txt")
-foreach ($f in $scratch)  { if (Test-Path $f) { Remove-Item $f -Force -ErrorAction SilentlyContinue } }
-foreach ($p in $patterns) { Get-ChildItem -Path . -Filter $p -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue }
-Write-Host "SSO scratch cleaned — ui-widget logs (tunnel.log/server.log/pids.txt) left intact ✅"
-```
-
-> Tip for the repo: add `sso-*.ps1`, `sso-*.txt`, `sso-*.json`, `server-sso.*.log`, `server-pid.txt` to `.gitignore` so SSO transient files can never be committed.
+▶ Execute [`references/build-verify-cleanup.md`](references/build-verify-cleanup.md) — **Phase 9** builds + re-provisions + `atk validate`/`atk install` (sideload), **Phase 10** starts the server (with `SSO_DEBUG=1`) and verifies an unauthenticated `/mcp` POST returns **401**, and **Phase 11** cleans up SSO scratch.
 
 ---
 
@@ -538,6 +152,14 @@ Write-Host "SSO scratch cleaned — ui-widget logs (tunnel.log/server.log/pids.t
 5. Confirm the widget renders with your signed-in identity (claims like `name`/`oid` flow via the SSO token).
 6. In the MCP server terminal, you should see one `[auth] Valid SSO token accepted: { sid, aud, tid, iss }` line per authenticated call — quick proof SSO is live. (This line only prints when the server runs with `SSO_DEBUG=1`, as in Phase 10; it is gated off by default.)
 
+## Deployment note — Azure (Easy Auth)
+`auth.ts` is intended for **local dev/testing**. When you host the MCP server on **Azure App Service** (or similar), prefer the platform's **built-in authentication ("Easy Auth")** over the custom guard — it validates tokens at the platform edge and reduces the attack surface. Include these links in the summary:
+- [Authentication and authorization in Azure App Service](https://learn.microsoft.com/azure/app-service/overview-authentication-authorization)
+- [Configure MCP server authorization in Azure App Service](https://learn.microsoft.com/azure/app-service/configure-authentication-mcp)
+
+## ⚠️ Caveat — if your dev tunnel URL changes later
+The OAuth registration's base URL, the Application ID URI, and the Entra app's `identifierUris` are all tied to the **current dev tunnel domain**. If that tunnel URL changes, authentication will break. Re-sync with `pwsh -NoProfile -File "$SsoScripts/resync-tunnel-url.ps1"` (or just re-run `/setup-sso-ui-widget`) so the OAuth base URL + App ID URI match the new tunnel, then restart the server and re-test.
+
 ---
 
 ## Notes & Error Handling
@@ -549,6 +171,7 @@ Write-Host "SSO scratch cleaned — ui-widget logs (tunnel.log/server.log/pids.t
 > debugging or when you need to understand *why* a phase does what it does.
 
 - **Two tunnels?** This skill reuses the tunnel from `env/.env.local`. If you ever see a second tunnel, stop it and keep the named one the ui-widget script created.
+- **Dev tunnel URL changed → auth suddenly broken.** The OAuth registration is created with `baseUrl: ${{MCP_SERVER_URL}}`, ATK derives the Application ID URI from that tunnel domain, and it's written into the Entra app's `identifierUris`. So the tunnel domain is baked into the OAuth registration, the App ID URI, **and** the Entra app. If the tunnel URL changes (tunnel deleted/recreated, anonymous tunnel expired, new name/port, different machine), the token audience stops matching and every authenticated call fails. **Recovery:** run `pwsh -NoProfile -File "$SsoScripts/resync-tunnel-url.ps1"` from the project root — it detects the new URL (or pass `-NewUrl https://...`), updates `MCP_SERVER_URL`/`MCP_SERVER_DOMAIN`, and re-runs Phases 4 → 5 → 6 → 9 so the OAuth base URL, App ID URI, `identifierUris`, and `mcpPlugin.json` all realign. Then restart the server against the new tunnel and re-test.
 - **401 in Copilot (not local):** server audience must equal `$AppIdUri` and issuer tenant `$TenantId` — confirm `env/.env.local` and that the server loads it. (See §5 of `sso-explained.md`.)
 - **`mcpPlugin.json` vs `ai-plugin.json`:** this skill is specifically for the ui-widget `mcpPlugin.json` layout; `ai-plugin.json` (express-jwt) projects aren't supported here.
 - **No OBO here.** For Microsoft Graph / downstream APIs, use a separate OBO flow later (out of scope). See §7 of `sso-explained.md` for what that delta looks like.

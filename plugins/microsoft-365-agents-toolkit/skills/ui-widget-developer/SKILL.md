@@ -425,3 +425,12 @@ Key points:
 5. **Partial data**: Handle missing fields with "Unknown" defaults
 6. **Action buttons**: Hide email/chat buttons when data is "Unknown"
 7. **Version bumping**: Bump manifest version when changes aren't reflected in Copilot
+
+## Next Step — Add SSO (optional)
+
+Once the ui-widget agent is scaffolded, running, and provisioned, you can add **Entra SSO** — so your MCP tools receive the signed-in user's verified identity — with the companion skill in this same plugin:
+
+▶ **`setup-sso-ui-widget`** — registers an Entra app, reuses your existing dev tunnel, injects a minimal JWKS token guard into your MCP server, wires `mcpPlugin.json` auth, and sideloads. SSO only, no OBO. (Run `/setup-sso-ui-widget` from the project root.)
+
+**Tell the user** (after the build/provision completes):
+> **Your ui-widget agent is ready.** 🎉 Want me to wire up **SSO** next, so your tools get the signed-in user's identity? I can run the **`setup-sso-ui-widget`** skill — just say the word.
