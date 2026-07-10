@@ -29,6 +29,55 @@ function Get-McpServerDir {
     return $null
 }
 
+# Resolve the declarative-agent plugin manifest, filename-agnostically. This is the runtimes[]
+# manifest whose auth block the skill patches. It differs by widget standard:
+#   - OAI Apps (ui-widget-developer):  appPackage/mcpPlugin.json
+#   - MCP Apps (create-mcp-app):       appPackage/readiness_plugin.json (or another *_plugin.json)
+# Prefer the file referenced by declarativeAgent.json actions[].file, then fall back to known
+# names, then any *_plugin.json in the app package.
+function Get-PluginManifest {
+    $apDir = Get-AppPackageDir
+    if (-not $apDir) { return $null }
+    $daPath = Join-Path $apDir "declarativeAgent.json"
+    if (Test-Path $daPath) {
+        try {
+            $da = Get-Content $daPath -Raw | ConvertFrom-Json
+            foreach ($a in @($da.actions)) {
+                if ($a.file) {
+                    $f = Join-Path $apDir $a.file
+                    if (Test-Path $f) { return $f }
+                }
+            }
+        } catch {}
+    }
+    foreach ($name in @("mcpPlugin.json", "readiness_plugin.json")) {
+        $f = Join-Path $apDir $name
+        if (Test-Path $f) { return $f }
+    }
+    $any = Get-ChildItem $apDir -Filter "*plugin*.json" -File -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($any) { return $any.FullName }
+    return $null
+}
+
+# Detect the MCP server framework style: "express" (MCP Apps standard) or "rawhttp" (OAI Apps).
+# Drives which guard-injection variant Phase 7b uses; the guard logic (auth.ts) is identical.
+function Get-ServerStyle {
+    param([string]$ServerDir = (Get-McpServerDir))
+    if ($ServerDir) {
+        $pkg = Join-Path $ServerDir "package.json"
+        if (Test-Path $pkg) {
+            try {
+                $p = Get-Content $pkg -Raw | ConvertFrom-Json
+                $deps = @()
+                if ($p.dependencies)    { $deps += $p.dependencies.PSObject.Properties.Name }
+                if ($p.devDependencies) { $deps += $p.devDependencies.PSObject.Properties.Name }
+                if ($deps -contains "express") { return "express" }
+            } catch {}
+        }
+    }
+    return "rawhttp"
+}
+
 # --- env/.env.local read/write ----------------------------------------------------------------
 function Get-EnvValue {
     param([Parameter(Mandatory)][string]$Key, [string]$File = $script:EnvFile)

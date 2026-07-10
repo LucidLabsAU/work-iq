@@ -1,4 +1,5 @@
-# Phase 6 — Wire SSO into mcpPlugin.json + add SSO-aware conversation starters (conditional).
+# Phase 6 — Wire SSO into the plugin manifest (mcpPlugin.json for OAI Apps, readiness_plugin.json
+# for MCP Apps) + add SSO-aware conversation starters (conditional).
 . "$PSScriptRoot/_lib.ps1"
 
 $AppPackageDir = Get-AppPackageDir
@@ -6,9 +7,13 @@ if (-not $AppPackageDir) { Fail "AppPackageDir not found — run detect-project.
 $AuthId = Get-EnvValue -Key "MCP_DA_OAUTH_AUTH_ID"
 if (-not $AuthId) { Fail "MCP_DA_OAUTH_AUTH_ID is empty — re-run atk-oauth-register.ps1 (Phase 4)." }
 
+# Resolve the runtimes[] plugin manifest (filename-agnostic: mcpPlugin.json OR readiness_plugin.json).
+$mcpPluginPath = Get-PluginManifest
+if (-not $mcpPluginPath) { Fail "No plugin manifest (mcpPlugin.json / readiness_plugin.json) found — run detect-project.ps1 first." }
+$manifestName = Split-Path $mcpPluginPath -Leaf
+
 # Switch the RemoteMCPServer runtime auth None -> OAuthPluginVault. Leave spec.url's
 # ${{MCP_SERVER_URL}}/mcp placeholder intact so ATK keeps resolving it from env/.env.local.
-$mcpPluginPath = Join-Path $AppPackageDir "mcpPlugin.json"
 $mcp = Get-Content $mcpPluginPath -Raw | ConvertFrom-Json -Depth 30
 foreach ($rt in $mcp.runtimes) {
     if ($rt.type -eq "RemoteMCPServer") {
@@ -16,7 +21,7 @@ foreach ($rt in $mcp.runtimes) {
     }
 }
 $mcp | ConvertTo-Json -Depth 30 | Set-Content $mcpPluginPath -Encoding UTF8
-Write-Host "mcpPlugin.json: runtime auth -> OAuthPluginVault ($AuthId) OK"
+Write-Host "$manifestName : runtime auth -> OAuthPluginVault ($AuthId) OK"
 
 # Conversation starters: surface the widget's OWN starters in declarativeAgent.json when the DA
 # defines none. The widget already declares tool-driven starters under mcpPlugin.json

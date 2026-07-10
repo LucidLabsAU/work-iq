@@ -1,26 +1,35 @@
 ---
 name: setup-sso-ui-widget
 description: >
-  Adds Entra SSO to a Microsoft 365 Copilot declarative agent that was built with the
-  ui-widget-developer skill (OAI Apps path). This skill is purpose-built for the
-  ui-widget project layout:
-  appPackage/mcpPlugin.json, a raw-http MCP server under mcp-server/, an already-running
-  named devtunnel, and env/.env.local. It reuses the existing tunnel (never creates a second
-  one), injects a minimal JWKS bearer-token guard into the existing MCP server WITHOUT
-  rewriting it to express, registers the Entra app + ATK OAuth, patches mcpPlugin.json auth,
+  Adds Microsoft Entra SSO (single sign-on, no OBO) to a Microsoft 365 Copilot declarative
+  agent whose tools are served by an MCP server — for BOTH widget standards:
+  (1) the MCP Apps standard (from create-mcp-app / the MCP Apps SDK): a plugin manifest such as
+  readiness_plugin.json (or another *_plugin.json with a runtimes[] block) and an EXPRESS-based
+  MCP server; and (2) the OpenAI Apps (OAI Apps) layout from the ui-widget-developer skill:
+  appPackage/mcpPlugin.json and a raw-http MCP server. When the layout is ambiguous, DEFAULT to
+  the MCP Apps standard (most projects use it). The skill auto-detects the layout, reuses the
+  existing named devtunnel + env/.env.local (never creates a second tunnel), registers the Entra
+  app + ATK OAuth (MicrosoftEntra), patches the plugin manifest's runtimes[] auth to
+  OAuthPluginVault, injects a minimal JWKS bearer-token guard into the existing server (an EXPRESS
+  middleware for MCP Apps, or a raw-http guard WITHOUT rewriting to Express for OAI Apps),
   validates, sideloads, and prints an app-registration summary. SSO only — no OBO.
-  Triggered by: "add sso after ui-widget-developer", "setup sso for ui widget skill",
-  "wire entra auth for my ui widget mcp server", "configure only sso no obo"
+  Triggered by: "add sso to my mcp server", "wire entra sso for my copilot agent",
+  "setup sso for mcp apps", "add sso after create-mcp-app", "add sso after ui-widget-developer",
+  "add entra auth to my express mcp server", "configure only sso no obo"
 ---
 
 # Setup SSO for a ui-widget-developer Agent (Minimal-Touch, No OBO)
 
-> **Why this exists.** The `ui-widget-developer` skill produces a distinctive project shape:
-> it emits `appPackage/mcpPlugin.json` (not `ai-plugin.json`), a raw Node `http` MCP server
-> under `mcp-server/` (no express, no express-jwt), a **named devtunnel that is already
-> running**, and `env/.env.local`.
-> This skill adapts to that layout instead of re-scaffolding, so the user's widget server
-> stays intact.
+> **Why this exists.** Copilot MCP-server agents come in two widget-standard shapes, and this
+> skill supports **both** (defaulting to **MCP Apps** when the layout is ambiguous):
+> - **MCP Apps** (`create-mcp-app` / MCP Apps SDK): a `runtimes[]` plugin manifest such as
+>   `appPackage/readiness_plugin.json` and an **Express**-based MCP server (`main.ts`).
+> - **OAI Apps** (`ui-widget-developer`): `appPackage/mcpPlugin.json` and a **raw-http** MCP
+>   server under `mcp-server/` (no express, no express-jwt).
+>
+> Both provide a **named devtunnel that is already running** and `env/.env.local`. Phase 0
+> auto-detects the layout (server framework + plugin manifest) and the skill adapts the manifest
+> patch and guard injection accordingly — it never re-scaffolds, so the user's server stays intact.
 
 > **New to how SSO works here?** Read [`references/sso-explained.md`](references/sso-explained.md)
 > first — it covers what SSO gives you (verified identity, not downstream access), the
@@ -32,7 +41,7 @@ description: >
 > - Execute every `az`, `devtunnel`, `atk`, `npm`, and PowerShell command in the TERMINAL yourself. Do NOT tell the user to run them.
 > - Do NOT improvise alternate approaches for the Entra/ATK steps — reuse the shared reference files under `references/`.
 > - Execute commands ONE AT A TIME, check output, diagnose failures, retry — never skip.
-> - **NO SCRATCH FILES — PATTERN-BASED, NOT NAME-BASED**: Run commands **directly** in the terminal and keep all state in shell variables. NEVER create a file whose purpose is to capture, stage, or read back command output — *regardless of its name or extension* (`.txt`, `.json`, `.log`, `.ps1`, …). This ban covers redirecting with `>`, `Out-File`, `Tee-Object`, or `Set-Content` so you can read the result later. **Permitted exception:** a short-lived temp file used *only* to pass a request body to `az rest --body @file` (as the shared reference files do) — written immediately before the call and deleted immediately after with `Remove-Item`; it never captures or reads back output. Concrete violations seen in testing that are FORBIDDEN: `atk provision ... > atk_prov_out.txt`, `az ad app show ... > appverify.json`, plus `sso-step*.ps1`, `sso-*.log`, `sso-*.txt`, `sso-state.json`, `*-precheck.txt`, `server-sso.*.log`, `server-pid.txt`. The ONLY files this skill writes are the ones explicitly shown in its phases (`auth.ts`, edits to `mcpPlugin.json` / `declarativeAgent.json` / `env/.env.local` / `m365agents.local.yml` / `m365agents.yml` / the MCP server entry file). Do NOT delete or alter the ui-widget skill's own files (`tunnel.log`, `server.log`, `pids.txt`, etc.).
+> - **NO SCRATCH FILES — PATTERN-BASED, NOT NAME-BASED**: Run commands **directly** in the terminal and keep all state in shell variables. NEVER create a file whose purpose is to capture, stage, or read back command output — *regardless of its name or extension* (`.txt`, `.json`, `.log`, `.ps1`, …). This ban covers redirecting with `>`, `Out-File`, `Tee-Object`, or `Set-Content` so you can read the result later. **Permitted exception:** a short-lived temp file used *only* to pass a request body to `az rest --body @file` (as the shared reference files do) — written immediately before the call and deleted immediately after with `Remove-Item`; it never captures or reads back output. Concrete violations seen in testing that are FORBIDDEN: `atk provision ... > atk_prov_out.txt`, `az ad app show ... > appverify.json`, plus `sso-step*.ps1`, `sso-*.log`, `sso-*.txt`, `sso-state.json`, `*-precheck.txt`, `server-sso.*.log`, `server-pid.txt`. The ONLY files this skill writes are the ones explicitly shown in its phases (`auth.ts`, edits to the plugin manifest (`mcpPlugin.json` / `readiness_plugin.json`) / `declarativeAgent.json` / `env/.env.local` / `m365agents.local.yml` / `m365agents.yml` / the MCP server entry file). Do NOT delete or alter the ui-widget skill's own files (`tunnel.log`, `server.log`, `pids.txt`, etc.).
 > - **TERMINAL OUTPUT LAGS? DO NOT REDIRECT TO A FILE.** If the terminal renders "one step behind", capture the output into a variable in the SAME shell and print it — no file: `$out = az ad app show --id $ClientId 2>&1 | Out-String; $out`. For `atk provision`, do NOT scrape stdout at all — read the generated values straight from `env/.env.local` (Phase 4d). Re-running a read-only query (`az ... show`) is always safe. Inventing a file to work around lag is never acceptable.
 > - **TERMINAL RULES**: Background/separate terminals get a fresh shell with NO inherited variables. Use **literal values** (e.g., `devtunnel host myapp-tunnel`) in those terminals. Never put short timeouts on `az` commands.
 
@@ -42,7 +51,7 @@ description: >
 
 ## Scope Guardrails
 
-- **SSO only**: Entra app registration + ATK OAuth registration + `mcpPlugin.json` auth wiring + minimal token validation + sideload.
+- **SSO only**: Entra app registration + ATK OAuth registration + plugin-manifest (`mcpPlugin.json` / `readiness_plugin.json`) auth wiring + minimal token validation + sideload.
 - **No OBO**: do NOT add downstream delegated token exchange / Microsoft Graph calls.
 - **Minimal touch**: do NOT refactor the widget or rewrite the MCP server to express. Only add a small JWKS guard + a per-request claims store.
 - **One tunnel**: REUSE the tunnel `ui-widget-developer` already created. Never create a second tunnel on the same port.

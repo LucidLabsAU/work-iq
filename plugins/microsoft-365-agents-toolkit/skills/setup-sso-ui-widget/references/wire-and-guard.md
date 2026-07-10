@@ -1,16 +1,16 @@
 # Wire SSO + Inject Guard + Write Env (Phases 6, 7, 8)
 
-## Phase 6 — Wire `mcpPlugin.json` + conversation starters
+## Phase 6 — Wire the plugin manifest + conversation starters
 
 ```powershell
 pwsh -NoProfile -File "$SsoScripts/wire-mcpplugin.ps1"
 ```
 
-Switches the `RemoteMCPServer` runtime auth from `None` → `OAuthPluginVault` (using the provisioned Auth ID), leaves the `${{MCP_SERVER_URL}}/mcp` placeholder intact, and — when `declarativeAgent.json` defines no starters of its own — copies the widget's starters from `mcpPlugin.json` (`capabilities.conversation_starters`) into it. No synthetic starters are injected: any tool call already performs the SSO token exchange, so the widget's real starters double as the SSO proof.
+Resolves the `runtimes[]` plugin manifest (`mcpPlugin.json` for OAI Apps, `readiness_plugin.json` for MCP Apps — whichever `declarativeAgent.json` `actions[].file` points to), switches its `RemoteMCPServer` runtime auth from `None` → `OAuthPluginVault` (using the provisioned Auth ID), leaves the `${{MCP_SERVER_URL}}/mcp` placeholder intact, and — when `declarativeAgent.json` defines no starters of its own — copies the widget's starters from that manifest's `capabilities.conversation_starters` into it. No synthetic starters are injected: any tool call already performs the SSO token exchange, so the widget's real starters double as the SSO proof.
 
 > **⚠️ Tunnel ↔ OAuth coupling.** The OAuth registration is created with `baseUrl: ${{MCP_SERVER_URL}}` (Phase 4), ATK derives the Application ID URI from that tunnel domain, and Phase 5 writes it into the Entra app's `identifierUris`. So the **dev tunnel domain is baked into the OAuth registration, the App ID URI, and the Entra app**. If the tunnel URL ever changes, authentication breaks until you re-sync — run `pwsh -NoProfile -File "$SsoScripts/resync-tunnel-url.ps1"` (auto-detects the new URL, or pass `-NewUrl https://...`), which re-runs Phases 4 → 5 → 6 → 9 so everything realigns.
 
-## Phase 7 — Inject the minimal JWKS guard (Option A, no express)
+## Phase 7 — Inject the minimal JWKS guard
 
 ### 7a. Add `jose` + write the guard (script)
 
@@ -18,11 +18,15 @@ Switches the `RemoteMCPServer` runtime auth from `None` → `OAuthPluginVault` (
 pwsh -NoProfile -File "$SsoScripts/inject-guard.ps1"
 ```
 
-Installs `jose` and copies the hardened guard from [`auth.ts`](auth.ts) into `$McpServerDir/src/auth.ts`. The guard is **single-tenant**: it validates signature/aud/iss/exp via `jose` and additionally enforces `scp = access_as_user` + tenant match, rejecting app-only tokens. See [`sso-explained.md`](sso-explained.md) §3.
+Installs `jose` (plus `dotenv` for Express / MCP Apps servers) and copies the hardened guard from [`auth.ts`](auth.ts) into the server **next to its entry file** — `src/` for a raw-http server, the project root (next to `main.ts`) for an Express server. The guard is **single-tenant**: it validates signature/aud/iss/exp via `jose` and additionally enforces `scp = access_as_user` + tenant match, rejecting app-only tokens. See [`sso-explained.md`](sso-explained.md) §3.
 
-### 7b. Insert the guard into the `/mcp` POST handler (code edit — you do this)
+### 7b. Insert the guard into the `/mcp` handler (code edit — you do this)
 
-> This edits the user's existing server file, so it's a model task (not a script). Open the MCP server entry file (`$McpServerDir/src/index.ts` or equivalent) and find the `POST /mcp` branch (`url.pathname === "/mcp"` and `req.method === "POST"`).
+> **Choose the variant matching your server** — Phase 0 wrote `SSO_SERVER_STYLE` (`express` for MCP Apps, `rawhttp` for OAI Apps), and `inject-guard.ps1` printed it. **Both variants reuse the SAME `auth.ts`** (`validateBearerToken` + `claimsStore`) — only *where* you attach the guard differs. This is a model task (not a script): open the server entry file that sits next to the `auth.ts` the script just wrote.
+
+#### Variant A — raw-http server (OAI Apps, `ui-widget-developer`)
+
+Open the entry (`$McpServerDir/src/index.ts` or equivalent) and find the `POST /mcp` branch (`url.pathname === "/mcp"` and `req.method === "POST"`).
 
 Add the import near the top of the file:
 ```typescript
@@ -70,11 +74,74 @@ if (req.method === "POST" && url.pathname === "/mcp") {
 }
 ```
 
+#### Variant B — Express server (MCP Apps, `create-mcp-app`)
+
+Open the entry (`main.ts` — it wires `app.all("/mcp", …)` via `createMcpExpressApp`).
+
+1. Ensure the server loads the **ATK local env** so `auth.ts` sees the SSO vars — add at the **very top** of the file (Express MCP Apps servers usually lack dotenv; `inject-guard.ps1` already installed the package). Load `env/.env.local` explicitly — that's where `write-sso-env.ps1` writes `TENANT_ID` / `CLIENT_ID` / `APP_ID_URI`; a bare `import "dotenv/config"` would only read a root `.env`:
+```typescript
+import dotenv from "dotenv";
+dotenv.config({ path: "env/.env.local" }); // adjust if the server's working dir isn't the project root
+```
+2. Add the guard import near the other imports:
+```typescript
+import { validateBearerToken, claimsStore } from "./auth.js";
+```
+3. Wrap the existing `/mcp` handler body in the guard + claims scope — transform:
+```typescript
+app.all("/mcp", async (req: Request, res: Response) => {
+  const server = createServer();
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+  res.on("close", () => { transport.close().catch(() => {}); server.close().catch(() => {}); });
+  try {
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+  } catch (error) {
+    console.error("MCP error:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error" }, id: null });
+    }
+  }
+});
+```
+into:
+```typescript
+app.all("/mcp", async (req: Request, res: Response) => {
+  let claims;
+  try {
+    claims = await validateBearerToken(req.headers.authorization);
+  } catch (err) {
+    console.error("[auth] token rejected:", (err as Error).message);
+    res.status(401).json({ jsonrpc: "2.0", error: { code: -32001, message: "Authentication required" }, id: null });
+    return;
+  }
+  if (process.env.SSO_DEBUG === "1") {
+    console.log("[auth] Valid SSO token accepted:", { sid: claims.sid, aud: claims.aud, tid: claims.tid, iss: claims.iss });
+  }
+  await claimsStore.run(claims, async () => {
+    const server = createServer();
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    res.on("close", () => { transport.close().catch(() => {}); server.close().catch(() => {}); });
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+    } catch (error) {
+      console.error("MCP error:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error" }, id: null });
+      }
+    }
+  });
+});
+```
+
 > Tools can read the signed-in user's claims anywhere via `claimsStore.getStore()` (`name`, `preferred_username`, `oid`, `tid`).
 
 ### 7c. Allow the `Authorization` header through CORS
 
-> In the same file, add `Authorization` to `Access-Control-Allow-Headers` for `/mcp` (preflight + responses), e.g. `"Content-Type, mcp-session-id, Last-Event-ID, mcp-protocol-version, Authorization"`. Without this, browser preflights drop the token.
+> **raw-http (Variant A):** add `Authorization` to `Access-Control-Allow-Headers` for `/mcp` (preflight + responses), e.g. `"Content-Type, mcp-session-id, Last-Event-ID, mcp-protocol-version, Authorization"`. Without this, browser preflights drop the token.
+>
+> **Express (Variant B):** the server uses `app.use(cors())` — bare `cors()` reflects the request's `Access-Control-Request-Headers`, so `Authorization` already passes. Only if `cors()` is configured with an explicit `allowedHeaders` list, add `"Authorization"` to it.
 
 ## Phase 8 — Write the server's SSO env
 
