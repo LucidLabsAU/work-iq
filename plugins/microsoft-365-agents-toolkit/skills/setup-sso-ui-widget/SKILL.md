@@ -162,7 +162,7 @@ After installing any tool, refresh PATH with the snippet above. Tag CLI usage on
 6. In the MCP server terminal, you should see one `[auth] Valid SSO token accepted: { sid, aud, tid, iss }` line per authenticated call — quick proof SSO is live. (This line only prints when the server runs with `SSO_DEBUG=1`, as in Phase 10; it is gated off by default.)
 
 ## Deployment note — Azure (Easy Auth)
-`auth.ts` is intended for **local dev/testing**. When you host the MCP server on **Azure App Service** (or similar), prefer the platform's **built-in authentication ("Easy Auth")** over the custom guard — it validates tokens at the platform edge and reduces the attack surface. Include these links in the summary:
+`auth.ts` is intended for **local dev/testing**. When you host the MCP server on **Azure App Service** (or similar), prefer the platform's **built-in authentication ("Easy Auth")** over the custom guard — it validates tokens at the platform edge and reduces the attack surface. See [`references/easy-auth.md`](references/easy-auth.md) for the field-by-field blade config (incl. the two gotchas: audience = bare client-id → `401`, and the Copilot-host allow-list → `403`). Include these links in the summary:
 - [Authentication and authorization in Azure App Service](https://learn.microsoft.com/azure/app-service/overview-authentication-authorization)
 - [Configure MCP server authorization in Azure App Service](https://learn.microsoft.com/azure/app-service/configure-authentication-mcp)
 
