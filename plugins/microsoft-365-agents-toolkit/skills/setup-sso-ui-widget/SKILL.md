@@ -162,7 +162,15 @@ After installing any tool, refresh PATH with the snippet above. Tag CLI usage on
 6. In the MCP server terminal, you should see one `[auth] Valid SSO token accepted: { sid, aud, tid, iss }` line per authenticated call — quick proof SSO is live. (This line only prints when the server runs with `SSO_DEBUG=1`, as in Phase 10; it is gated off by default.)
 
 ## Deployment note — Azure (Easy Auth)
-`auth.ts` is intended for **local dev/testing**. When you host the MCP server on **Azure App Service** (or similar), prefer the platform's **built-in authentication ("Easy Auth")** over the custom guard — it validates tokens at the platform edge and reduces the attack surface. See [`references/easy-auth.md`](references/easy-auth.md) for the field-by-field blade config (incl. the two gotchas: audience = bare client-id → `401`, and the Copilot-host allow-list → `403`). Include these links in the summary:
+`auth.ts` is for **local dev/testing** only. When you host the MCP server on **Azure App Service**, use the platform's built-in **Easy Auth** instead of the custom guard. **Reproduce this entire block in your summary — do NOT paraphrase it away.** Configure **App Service → Authentication → Microsoft Entra identity provider** with:
+- **App registration:** the Entra app this skill created (`<ClientId>`) — do not create a new one.
+- **Supported account types:** Single tenant.
+- **Issuer URL:** `https://login.microsoftonline.com/<TenantId>/v2.0`
+- **Allowed token audiences:** `<ClientId>` — the **bare client-id** form (NOT `api://…`), else `401`.
+- **Client application requirement:** *Allow requests from specific client applications* → add BOTH `<ClientId>` **and** `ab3be6b7-f5df-413d-ac2d-abf1e3fd9c0b` (M365 Copilot host). Missing the host id → `403` even with a valid token.
+- **Unauthenticated action:** Return HTTP 401.
+
+📄 **Full field-by-field guide** (both blade tables + both gotchas): **[`references/easy-auth.md`](references/easy-auth.md)** — cite it by name in the summary. Also include:
 - [Authentication and authorization in Azure App Service](https://learn.microsoft.com/azure/app-service/overview-authentication-authorization)
 - [Configure MCP server authorization in Azure App Service](https://learn.microsoft.com/azure/app-service/configure-authentication-mcp)
 
