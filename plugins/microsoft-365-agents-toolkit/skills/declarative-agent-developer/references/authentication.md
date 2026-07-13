@@ -72,7 +72,7 @@ az ad app update --id $ClientId `
   --web-redirect-uris "https://teams.microsoft.com/api/platform/v1.0/oAuthConsentRedirect"
 ```
 
-> **Microsoft corp tenant:** `az ad app create` additionally requires `--service-management-reference <ServiceTreeId>` (your ServiceTree GUID), and the admin-consent tooling needs **2+ FTE owners** on both the app and its service principal.
+> **Tenants with an app-creation policy:** some tenants require additional metadata on `az ad app create` (for example a `--service-management-reference <id>` value), and may require multiple owners on both the app and its service principal before admin consent can be granted. If your tenant enforces such a policy, `az ad app create` will fail with a policy error — add the value it asks for and retry.
 
 ### Step S2 — Register the SSO Config with ATK (`MicrosoftEntra`)
 
