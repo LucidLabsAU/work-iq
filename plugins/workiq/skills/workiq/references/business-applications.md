@@ -20,7 +20,10 @@ substitute a separate endpoint, another MCP server, or an invented REST URL.
 5. For an unknown path or identifier, discover the Business Applications resource this way — apps, tables, records,
    skills, APIs, and operations. Take each identifier from the returned paths. Do not guess an ID or name. Known
    structural inventory is the exception: use its direct `fetch` path, especially `/businessapps/environments/`.
-6. Use `get_schema` on the returned concrete path before an unfamiliar mutation or operation. Never fill in
+   Choose the smallest sufficient set from the returned descriptions; when two or more are needed, read them in one
+   `fetch` through `entityUrls`, retain successful per-entry results, and retry only required failures.
+6. Fetch a concrete table to read its columns; do not repeat that read with `get_schema`. Use `get_schema` before an
+   unfamiliar mutation or operation whose input contract was not returned. Never fill in
    `{environmentId}`, `{tableName}`, `{recordId}`, `{appName}`, `{apiName}`, `{skillName}`, or operation names
    from memory.
 
@@ -34,7 +37,7 @@ policy-denied before any grounded path is returned, ending the workflow before
 | Intent | WorkIQ tool and Business Applications path |
 |---|---|
 | List environments/default | `fetch` `/businessapps/environments/` |
-| List or describe tables | `fetch` or `get_schema` `/businessapps/environments/{environmentId}/tables[/<tableName>]` |
+| List or describe tables | `fetch` `/businessapps/environments/{environmentId}/tables[/<tableName>]` (batch known paths with `entityUrls`) |
 | Read a record | `fetch` `/businessapps/environments/{environmentId}/tables/{tableName}/records/{recordId}` |
 | Query environment data | `do_action` `/businessapps/environments/{environmentId}/query` with `jsonBody: {"querytext":"SELECT ..."}` |
 | Create a table | `create_entity` on `/businessapps/environments/{environmentId}/tables` with `{tableName, columns, displayName?, description?}` |
@@ -53,7 +56,12 @@ policy-denied before any grounded path is returned, ending the workflow before
 
 Environment SQL queries and Custom APIs with input bodies are actions, not functions. Use `do_action` with the
 schema-defined `jsonBody`. Use `call_function` only for an exact function path returned by discovery; do not use it
-for `/businessapps/environments/{environmentId}/query`.
+for `/businessapps/environments/{environmentId}/query`. Pass SQL in `querytext`, never natural language. Use explicit
+schema-confirmed columns, selective `WHERE`, and `TOP` or paging. Inspect the query schema once when its contract was
+not returned, and use only its advertised SQL subset; do not improvise subqueries, `CASE`, or `APPLY`. Join confirmed
+keys within one environment when useful; across environments, run bounded queries and correlate locally by stable
+business keys, not names or assumed shared IDs. Use keys returned by the first query to filter later queries; do not
+scan entire secondary tables.
 
 ## Business skills
 
@@ -154,7 +162,7 @@ App-scoped paths intentionally differ from environment table paths:
 - WorkIQ's top-level `ask` can also answer questions about Business Applications requests, though some applications
   may not be included in `ask`, so use `search_paths` for authoritative semantic path discovery.
 - Do not invent `/businessapps` REST shapes, append OData syntax to an undiscovered Business Applications path, or
-  move `/records/` into an app-scoped path.
+  move `/records/` into an app-scoped path, or retry a confirmed unsupported path through different tools.
 - Preserve exact casing and IDs returned by tools in subsequent calls, although structural path segments are
   case-insensitive.
 - A write is complete only when the tool response confirms it. For a multi-turn delegated workflow, preserve and
