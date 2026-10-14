@@ -92,6 +92,14 @@ test('plugin descriptions retain workload and action discovery beyond retrieval'
   }
 });
 
+test('Business Applications guidance does not advertise execute-work', () => {
+  for (const name of ['workiq', 'workiq-preview']) {
+    for (const file of markdownFiles(skillRoot(name))) {
+      assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /execute-work/i);
+    }
+  }
+});
+
 test('Business Applications discovery and inventory contracts stay aligned', () => {
   for (const name of ['workiq', 'workiq-preview']) {
     const directory = skillRoot(name);

@@ -51,7 +51,6 @@ policy-denied before any grounded path is returned, ending the workflow before
 | Delete a business skill | `delete_entity` on `/businessapps/environments/{environmentId}/skills/{skillName}` |
 | Run an app-scoped operation | `do_action` on the exact `.../apps/{appName}/.../operations/{operationName}` path returned by `get_schema` |
 | Invoke a Custom API | `do_action` on the exact `/businessapps/environments/{environmentId}/customapis/{apiName}` path returned by discovery, with API inputs in `jsonBody` |
-| Delegate an open-ended goal to an environment | `do_action` `/businessapps/environments/{environmentId}/execute-work` with `{"instruction":"...","sessionId":"<optional>"}` |
 | Invoke an in-app MCP tool | `do_action` on the exact `/businessapps/environments/{environmentId}/mcp/{serverName}/tools/{toolName}` path |
 
 Environment SQL queries and Custom APIs with input bodies are actions, not functions. Use `do_action` with the
@@ -109,40 +108,6 @@ diagnostic says so, and do not retry through another path.
   operation. Record-level access does not imply customization rights, and a
   saved view or ordinary record update is not a schema-customization fallback.
 
-## When to use `execute-work`
-
-Use `execute-work` when the user wants to **delegate an open-ended goal** to the business agent in a specific
-environment and completing that goal requires the environment to plan or coordinate multiple steps, choose among
-its skills or operations, or maintain a delegated work session. Discover the environment and confirm that its
-returned paths expose `execute-work`, then pass the user's complete goal in `instruction`.
-
-Prefer direct tools when WorkIQ already exposes the precise operation:
-
-- Use `fetch`, `get_schema`, or `search_paths` for discovery, metadata, and exact reads.
-- Use `create_entity`, `update_entity`, or `delete_entity` for a known data mutation.
-- Use `do_action` for a discovered environment SQL query; use `call_function`
-  only for a discovered function path.
-- Use `do_action` on a discovered app-scoped operation or Custom API when that operation directly satisfies the
-  request.
-
-Choose `execute-work` when the requested outcome is best expressed as a delegated goal rather than a specific
-WorkIQ operation. For a continuation, pass the prior `sessionId`; otherwise omit it. Treat the returned work result
-as evidence from the environment, and surface any ambiguity, partial completion, requested confirmation, or failure
-rather than claiming success.
-
-`execute-work` is not a fallback for a missing named skill, app operation, or
-Custom API. When the user asks to run a specific named capability:
-
-1. discover the environment's available skills and operations;
-2. fetch the candidate definition when one is returned;
-3. require an exact capability match before invoking it;
-4. if it does not exist, state that clearly and abstain from execution.
-
-Do not silently substitute a similar skill, combine nearby records into an
-invented result, or reinterpret a different workflow as the requested
-capability. You may offer discovered alternatives, but run one only after the
-user chooses it.
-
 ## App-scoped operations
 
 App-scoped paths intentionally differ from environment table paths:
@@ -165,9 +130,7 @@ App-scoped paths intentionally differ from environment table paths:
   move `/records/` into an app-scoped path, or retry a confirmed unsupported path through different tools.
 - Preserve exact casing and IDs returned by tools in subsequent calls, although structural path segments are
   case-insensitive.
-- A write is complete only when the tool response confirms it. For a multi-turn delegated workflow, preserve and
-  reuse the returned/provided `sessionId`; drafting and sending are separate turns when the workflow requires
-  confirmation.
+- A write is complete only when the tool response confirms it.
 - For metadata-only questions with an unknown path, use `search_paths`, then fetch the returned resource. For known
   structural inventory, use its direct `fetch` path instead, especially `/businessapps/environments/` for environment
   listing. For exact data reads/writes, use the environment/table/app paths directly after discovery.

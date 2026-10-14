@@ -43,7 +43,7 @@ mutations even if they do not send a message.
 | Accept/decline, cancellation, forwarding, free/busy | [Calendar](calendar-work-iq.md) |
 | Drive-scoped copy and upload-session creation | [Files](files-work-iq.md) |
 | Read/unread, reactions, presence | [Teams](teams-work-iq.md) |
-| Environment SQL, Custom APIs, app operations, and delegated environment work | [Business Applications](business-applications.md) |
+| Environment SQL, Custom APIs, and app operations | [Business Applications](business-applications.md) |
 
 Use [create_entity](create-entity-work-iq.md) for collection creation such as a
 fresh draft; `createReply`/`createReplyAll`/`createForward` remain actions.

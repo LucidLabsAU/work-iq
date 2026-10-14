@@ -26,8 +26,7 @@ registrations. Do not substitute another MCP server or invent REST paths.
 
 Discovery is read-only: use `search_paths`, not `do_action` on
 `/businessapps/me`. `do_action` remains appropriate for a discovered
-environment SQL query, Custom API, app operation, in-app MCP tool, or delegated
-environment work.
+environment SQL query, Custom API, app operation, or in-app MCP tool.
 
 Do not use `do_action` on `/businessapps/me` for discovery even if that route is
 exposed; use `search_paths` instead. The old route is POST-shaped and can be
@@ -48,7 +47,6 @@ policy-denied before any grounded path is returned, ending the workflow before
 | List or inspect business skills | `fetch` `/businessapps/environments/{environmentId}/skills[/{skillName}]` |
 | Run an app operation | `do_action` on the exact discovered `.../operations/{operationName}` path |
 | Invoke a Custom API | `do_action` on the exact discovered `/businessapps/environments/{environmentId}/customapis/{apiName}` path |
-| Delegate open-ended environment work | `do_action` `/businessapps/environments/{environmentId}/execute-work` with the schema-defined instruction and optional session ID |
 
 Environment SQL and Custom APIs with request bodies are actions, not OData
 functions. Use `call_function` only for a function path returned by discovery.
@@ -91,5 +89,4 @@ supported safe read when available; otherwise report **outcome unknown**.
   replace authoritative path discovery for a requested Business Applications
   record or operation.
 - A named skill, app operation, or Custom API requires an exact discovered
-  capability match. Do not silently substitute a similar capability or use
-  `execute-work` as a fallback.
+  capability match. Do not silently substitute a similar capability.

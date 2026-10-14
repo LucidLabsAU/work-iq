@@ -33,7 +33,7 @@ Vs. `create_entity`: use `do_action` for verbs (send, copy, move, accept, reply,
 For Business Applications, use `search_paths`, not `do_action` on
 `/businessapps/me`, for semantic discovery. Use `do_action` only after discovery
 identifies a genuine action such as an environment SQL query, Custom API, app
-operation, in-app MCP tool, or delegated environment work.
+operation, or in-app MCP tool.
 
 ## Examples
 
