@@ -109,7 +109,7 @@ test('Business Applications discovery and inventory contracts stay aligned', () 
     const action = fs.readFileSync(path.join(directory, 'references', 'do-action-work-iq.md'), 'utf8');
 
     assert.match(skill, /Business Applications|CRM, ERP, or Power Apps/i);
-    assert.match(business, /search_paths[\s\S]{0,300}(?:query|filter)/i);
+    assert.match(business, /search_paths[\s\S]{0,300}fields? accepted by[\s\S]{0,80}(?:tool )?schema/i);
     assert.match(business, /fetch[\s\S]{0,80}\/businessapps\/environments\//i);
     assert.match(business, /discovery is read-only[\s\S]{0,100}search_paths[\s\S]{0,80}not `?do_action`?/i);
     assert.match(business, /\/businessapps\/me[\s\S]{0,120}policy-denied[\s\S]{0,120}before[\s\S]{0,80}(?:grounded path|search_paths|fetch)/i);
