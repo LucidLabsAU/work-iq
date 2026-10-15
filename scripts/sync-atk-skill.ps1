@@ -11,7 +11,7 @@
   After syncing, updates scripts/sync-manifest.json with the source commit hash.
 
 .PARAMETER Ref
-  Branch, tag, or commit SHA to sync from (default: main).
+  Branch, tag, or commit SHA to sync from (default: dev, the upstream default branch).
 
 .PARAMETER TargetPath
   Path to the work-iq teams-app-developer skill root (defaults to the standard relative location).
@@ -25,7 +25,7 @@
   .\sync-atk-skill.ps1 -DryRun
 #>
 param(
-  [string]$Ref = "main",
+  [string]$Ref = "dev",
 
   [string]$TargetPath = (Join-Path $PSScriptRoot "..\plugins\microsoft-365-agents-toolkit\skills\teams-app-developer"),
 
@@ -58,8 +58,11 @@ Write-Host "  Resolved to: $SourceCommit"
 Write-Host "`nFetching file tree..."
 $treeResp = Invoke-RestMethod "$ApiBase/git/trees/$SourceCommit`?recursive=1" `
   -Headers @{ "User-Agent" = "sync-atk-skill" }
-$allFiles = $treeResp.tree | Where-Object { $_.type -eq "blob" -and $_.path -like "$SourcePrefix/*" }
+$allFiles = @($treeResp.tree | Where-Object { $_.type -eq "blob" -and $_.path -like "$SourcePrefix/*" })
 Write-Host "  Found $($allFiles.Count) files under $SourcePrefix"
+if ($allFiles.Count -eq 0) {
+  throw "No files under $SourcePrefix at $SourceCommit. The upstream skill folder has moved or the ref is wrong; update `$SourcePrefix or pass -Ref."
+}
 
 # ── Directories to copy verbatim ─────────────────────────────────────────────
 $BulkDirs = @(
@@ -87,7 +90,7 @@ function Download-File {
 
 foreach ($dir in $SyncDirs) {
   $prefix = "$SourcePrefix/$dir/"
-  $dirFiles = $allFiles | Where-Object { $_.path -like "$prefix*" }
+  $dirFiles = @($allFiles | Where-Object { $_.path -like "$prefix*" })
   if ($dirFiles.Count -eq 0) {
     Write-Warning "No files found for $dir/, skipping"
     continue

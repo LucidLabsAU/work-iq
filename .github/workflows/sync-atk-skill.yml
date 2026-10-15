@@ -9,7 +9,7 @@ on:
       ref:
         description: "ATK branch, tag, or commit SHA to sync from"
         required: false
-        default: "main"
+        default: "dev"
       dry_run:
         description: "Dry run (no files written, no PR created)"
         type: boolean
@@ -32,7 +32,7 @@ jobs:
       - name: Resolve ATK ref
         id: atk
         env:
-          REF: ${{ github.event.inputs.ref || 'main' }}
+          REF: ${{ github.event.inputs.ref || 'dev' }}
         run: |
           COMMIT=$(curl -sSf \
             -H "User-Agent: sync-atk-skill-workflow" \
