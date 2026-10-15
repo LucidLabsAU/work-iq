@@ -9,17 +9,25 @@ Scaffold a new Microsoft 365 agent or Teams app from an ATK template.
 > API/MCP plugin setup, OAuth, localization, and deployment. The templates below include DA
 > options for reference, but the `declarative-agent-developer` skill owns that workflow end-to-end.
 
+
+### Declarative Agents
+
+| User Wants | Lifecycle Route | Capability |
+| --- | --- | --- |
+| Extend M365 Copilot with custom instructions | WIQD plugin | Delegate to `wiqd` |
+| Declarative Agent with new API backend source code | WIQD plugin | Delegate to `wiqd` |
+| Declarative Agent with new API backend and Bearer token | WIQD plugin | Delegate to `wiqd` |
+| Declarative Agent with new API backend and OAuth | WIQD plugin | Delegate to `wiqd` |
+| Declarative Agent with existing OpenAPI spec | WIQD plugin | Delegate to `wiqd` |
+| Connect existing MCP Server to Copilot | WIQD plugin | Delegate to `wiqd` |
+| Declarative Agent using an existing Copilot Connector connection | WIQD plugin | Delegate to `wiqd` |
+| Declarative Agent with a new project-owned Copilot Connector backend | WIQD plugin | Delegate to `wiqd` |
+| Declarative Agent from TypeSpec | ATK | `declarative-agent-typespec` |
+
+### Other Agents and Apps
+
 | User Wants | Capability |
 |------------|------------|
-| Extend M365 Copilot with custom instructions | `declarative-agent` |
-| Declarative Agent with new API | `declarative-agent-action` |
-| Declarative Agent with new API (Bearer Token) | `declarative-agent-action-bearer` |
-| Declarative Agent with new API (OAuth) | `declarative-agent-action-oauth` |
-| Declarative Agent with existing OpenAPI spec | `declarative-agent-action-from-existing-api` |
-| Connect MCP Server to Copilot | `declarative-agent-with-action-from-mcp` |
-| Declarative Agent with Copilot Connector | `declarative-agent-with-graph-connector` |
-| Declarative Agent for MetaOS | `declarative-agent-meta-os-new-project` |
-| Declarative Agent from TypeSpec | `declarative-agent-typespec` |
 | Agent with custom LLM (Azure OpenAI, etc.) | `basic-custom-engine-agent` |
 | Weather forecast agent | `weather-agent` |
 | Agent using Azure AI Foundry | `foundry-agent-to-m365` |
@@ -32,12 +40,20 @@ Scaffold a new Microsoft 365 agent or Teams app from an ATK template.
 | Teams tab app | `tab` |
 | Teams message extension | `message-extension` |
 | Copilot Connector | `copilot-connector` |
+| Office task pane add-in (Word/Excel/PowerPoint/Outlook) | `office-addin-wxpo-taskpane` |
+| Excel custom functions (shared runtime) | `office-addin-excel-cfshortcut` |
+| Excel custom functions (JavaScript-only runtime) | `office-addin-excel-customfunctions` |
+| Office add-in with SSO via Nested App Auth | `office-addin-sso-naa` |
 
 See [../toolkit/templates.md](../toolkit/templates.md) for the complete template catalog with language support and descriptions.
 
 ## Creating Projects
 
-Create templates in the current directory with one generic flow:
+For every Declarative Agent except TypeSpec, invoke the `wiqd` skill. Pass control to the plugin with the user's full creation intent and relevant project paths; do not run WIQD CLI commands directly or duplicate the plugin's workflow. This includes requests for a new Azure-hosted API backend or Copilot Connector backend. The WIQD plugin coordinates the appropriate Azure and Entra skills for new backend resources. See [declarative-agent-lifecycle.md](../toolkit/declarative-agent-lifecycle.md) for the routing boundary.
+
+Use the ATK `declarative-agent-typespec` capability only when the user explicitly requests a TypeSpec DA.
+
+For all other ATK entries, create templates in the current directory with this flow:
 
 ```bash
 # 1) Scaffold into a temporary parent folder
@@ -53,20 +69,23 @@ rmdir /tmp/<project-name>
 Common examples:
 
 ```bash
-# Declarative Agent (no -l needed)
-atk new -c declarative-agent -n my-agent -f /tmp -i false
-
-# Declarative Agent with new API
-atk new -c declarative-agent-action -l typescript -n my-api-agent -f /tmp -i false
-
-# Declarative Agent with existing OpenAPI spec
-atk new -c declarative-agent-action-from-existing-api -n my-agent -a <openapi-spec-url-or-path> -o "GET /repairs" -o "POST /repairs" -f /tmp -i false
-
 # Custom Engine Agent
 atk new -c basic-custom-engine-agent -l typescript -n my-cea -f /tmp -i false
 
 # Teams Agent with RAG
 atk new -c teams-agent-rag-customize -l typescript -n my-rag-agent -f /tmp -i false
+
+# Office task pane add-in (all Office apps by default)
+atk new -c office-addin-wxpo-taskpane -l typescript -n my-addin -f /tmp -i false
+
+# Office task pane add-in for specific apps only (comma-separated, no spaces)
+atk new -c office-addin-wxpo-taskpane -l typescript -n my-addin --office-addin-hosts word,excel -f /tmp -i false
+
+# Excel custom functions (JavaScript-only runtime)
+atk new -c office-addin-excel-customfunctions -l typescript -n my-addin -f /tmp -i false
+
+# Office add-in with SSO via Nested App Auth
+atk new -c office-addin-sso-naa -l typescript -n my-addin -f /tmp -i false
 ```
 
 PowerShell equivalent:
@@ -111,8 +130,7 @@ List all samples with `atk list samples`.
 
 ## Notes
 
-- `declarative-agent` does NOT require `-l` language flag
-- `declarative-agent-action-from-existing-api` requires `-a` (OpenAPI spec) and `-o` (operation IDs like `"GET /path"`)
+- Office add-in capabilities (`office-addin-*`) are TypeScript only; `office-addin-wxpo-taskpane` accepts `--office-addin-hosts word,excel` (comma-separated) to limit which Office apps it supports, defaulting to all four
 - Always use `-i false` for non-interactive scripted creation
 - `atk new` can take several minutes — wait for completion (timeout 120000ms+)
 - If template/sample already matches the requirement, do not run dependency install by default; continue only when user asks for next steps
@@ -120,14 +138,16 @@ List all samples with `atk list samples`.
 ## After Scaffolding
 
 Once the project is created:
-- To test locally → see [../test-playground/test-playground.md](../test-playground/test-playground.md)
+- For any non-TypeSpec DA → continue with the WIQD plugin through [declarative-agent-lifecycle.md](../toolkit/declarative-agent-lifecycle.md)
+- For a TypeSpec DA → follow the generated ATK lifecycle and use [../provision-deploy/provision-deploy.md](../provision-deploy/provision-deploy.md)
+- For other projects, to test locally → see [../test-playground/test-playground.md](../test-playground/test-playground.md)
 - To understand project files → see [../toolkit/manifest-and-yaml.md](../toolkit/manifest-and-yaml.md)
 
 ## Expert Deep Dives
 
 > **Applies to: code-based Teams bots/agents only** (templates: `bot`, `teams-agent*`, `basic-custom-engine-agent`, `weather-agent`, `coffee-agent`, `bot-sso`, `msgext-*`, `tab*`).
 >
-> Does **not** apply to declarative agents, API plugins, Copilot connectors, or `declarative-agent-*` / `copilot-connector` templates — those have no source code to scaffold against. For those, follow the in-template instructions and the [Microsoft 365 Copilot extensibility docs](https://learn.microsoft.com/microsoft-365-copilot/extensibility/) directly.
+> Does **not** apply to non-TypeSpec DAs, including DAs that need new backend source or deployment. Delegate those workflows to the WIQD plugin.
 
 For deeper guidance on what `atk new` produces and how to extend it, consult the Teams expert micro-files:
 
