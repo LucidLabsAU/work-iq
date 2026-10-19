@@ -1,8 +1,8 @@
 {
-  "last_sync": "2026-10-15",
+  "last_sync": "2026-10-19",
   "source_repo": "OfficeDev/microsoft-365-agents-toolkit",
   "source_ref": "dev",
-  "source_commit": "c38141f74a53a0f6c4083522d37e18141a536c94",
+  "source_commit": "003386e0ae20638856ed4c10673bab0f1b4ad0fa",
   "source_prefix": "packages/vscode-extension/skills/microsoft-365-agents-toolkit",
   "target_skill": "teams-app-developer",
   "manually_maintained": [
