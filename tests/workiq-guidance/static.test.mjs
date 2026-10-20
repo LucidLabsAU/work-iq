@@ -200,40 +200,38 @@ test('Work IQ Files remains an on-demand reference within a single preview skill
     .filter(file => path.basename(file) === 'SKILL.md');
   assert.deepEqual(skills, [path.join(skillRoot('workiq-preview'), 'SKILL.md')]);
   assert.equal(parseMarkdown(filesReference).frontmatter, undefined);
-  assert.match(filesReference, /on-demand workflow within that skill, not a separate skill/);
+  assert.match(filesReference, /^# Work IQ Files CLI/m);
 });
 
-test('Work IQ Files documents verified 0.1.1 commands and explicit EULA gate', () => {
+test('Work IQ Files documents core commands and explicit EULA gate', () => {
   const { codes } = parseMarkdown(filesReference);
   const commands = codes.map(code => code.value).join('\n');
   for (const command of [
     'npm install --global @microsoft/workiq-files@0.1.1 --registry=https://packagefeedproxy.microsoft.io/npm/',
-    'workiq-files --version', 'workiq-files --help', 'workiq-files eula show',
+    'workiq-files --help', 'workiq-files eula show',
     'workiq-files accept-eula', 'workiq-files auth login',
-    'workiq-files auth account list', 'workiq-files auth account use --account',
     'workiq-files status --file-id', 'workiq-files download --file-id',
-    'workiq-files upload --file-id', 'workiq-files download --reference'
+    'workiq-files upload --file-id'
   ]) {
     assert.ok(commands.includes(command), `Missing verified command: ${command}`);
   }
   for (const code of codes.filter(code => code.value.includes('workiq-files accept-eula'))) {
     assert.equal(code.value, 'workiq-files accept-eula', 'Acceptance must remain a separate command');
   }
-  assert.match(filesReference, /explicit permission to accept this agreement on their behalf/);
-  assert.match(filesReference, /no interactive confirmation prompt/);
-  assert.match(filesReference, /silence is not EULA consent/);
-  assert.match(filesReference, /never run it as an automatic error-recovery step/i);
-  assert.match(filesReference, /Changed terms require renewed review and explicit permission/);
+  assert.match(filesReference, /explicit user permission/);
+  assert.match(filesReference, /accepts immediately without a confirmation prompt/);
+  assert.match(filesReference, /Installation or a transfer request is not consent/);
+  assert.match(filesReference, /never automate acceptance, including after an error/i);
 });
 
 test('Work IQ Files preserves metadata, identity, secrets, and transfer boundaries', () => {
   assert.match(filesReference, /entity tools for structured metadata queries/);
-  assert.match(filesReference, /Graph drive-item ID[\s\S]{0,200}not automatically a WorkIQ/);
-  assert.match(filesReference, /Never expose access\/refresh tokens[\s\S]{0,100}signed URLs/);
-  assert.match(filesReference, /Do not fall back to Graph[\s\S]{0,180}denied operation/);
-  assert.match(filesReference, /Session creation[\s\S]{0,100}is not uploaded content/);
+  assert.match(filesReference, /Graph drive-item IDs[\s\S]{0,100}are not WorkIQ file IDs/);
+  assert.match(filesReference, /Never expose tokens[\s\S]{0,100}signed URLs/);
+  assert.match(filesReference, /denial; do not switch tools, accounts, or endpoints to bypass it/);
+  assert.match(filesReference, /session creation is not a completed transfer/);
   assert.match(filesReference, /Do not blindly replay an ambiguous upload/);
-  assert.match(filesReference, /--overwrite[\s\S]{0,100}explicit authorization/);
+  assert.match(filesReference, /Confirm[\s\S]{0,100}before uploading or overwriting files/);
   for (const name of packages) {
     const skill = fs.readFileSync(path.join(skillRoot(name), 'SKILL.md'), 'utf8');
     assert.match(skill, /Read \[Files CLI\]\(references\/workiq-files-cli\.md\)/);

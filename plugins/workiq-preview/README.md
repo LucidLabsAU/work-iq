@@ -114,15 +114,7 @@ Use `ask` when the user explicitly requests Copilot's or a specific agent's answ
 
 ### Work IQ Files CLI
 
-The existing `workiq-preview` skill includes an on-demand [Files CLI reference](./skills/workiq-preview/references/workiq-files-cli.md), not a separate skill. It covers the local CLI, verified against published `@microsoft/workiq-files@0.1.1` and its actual help. The CLI requires Node.js 20+ and is not installed by the plugin. Install from the Microsoft feed:
-
-```powershell
-npm install --global @microsoft/workiq-files@0.1.1 --registry=https://packagefeedproxy.microsoft.io/npm/
-workiq-files --help
-workiq-files eula show
-```
-
-Review the displayed EULA and obtain explicit user permission **before** separately running `workiq-files accept-eula`; that command accepts immediately without a confirmation prompt. Never automate acceptance during installation or sign-in. The reference then guides authentication, safe status, download, and upload with authoritative WorkIQ file IDs/references. Do not expose tokens or signed URLs, infer CLI references from Graph IDs, or bypass a denial with another transfer route.
+For installation, EULA review, authentication, and transfer commands, follow the skill's [Files CLI reference](./skills/workiq-preview/references/workiq-files-cli.md). The CLI requires Node.js 20+; installing the plugin does not install it or accept its terms. EULA acceptance requires explicit user permission.
 
 > ⚠️ Graph `upload_blob` is not released. The separate CLI does not turn a Graph upload session into transferred bytes: “session created; no bytes uploaded” is not “file replaced.”
 
