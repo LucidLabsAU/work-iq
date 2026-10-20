@@ -4,6 +4,8 @@
 upload alias, or treat a future parameter example as an available tool. WorkIQ
 cannot accept raw OneDrive/SharePoint byte payloads through this surface.
 
+For actual WorkIQ file uploads, load [workiq-files](../../workiq-files/SKILL.md). The separate CLI supports transfers with authoritative WorkIQ file IDs/references after EULA review, explicit permission to accept, authentication, and transfer authorization. A Graph item ID or session URL does not establish such a reference; never use the CLI to bypass a denial.
+
 The canonical [Files](files-work-iq.md) reference owns upload-session creation,
 drive/item resolution, and byte-transfer limitations. A created session is not an
 uploaded or replaced file. Report the operation actually completed and any remaining

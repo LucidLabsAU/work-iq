@@ -1,7 +1,6 @@
 # Files and drive items
 
-Canonical contract for exact file metadata and drive-item operations. Use
-[fetch_blob](fetch-blob-work-iq.md) for bytes.
+Canonical contract for exact file metadata and drive-item operations. Load [workiq-files](../../workiq-files/SKILL.md) before WorkIQ file access, content downloads, or local-file uploads. Structured metadata stays on entity tools; the CLI requires its own authoritative WorkIQ file ID/reference, not an assumed Graph ID. Supported Graph downloads retain the [fetch_blob](fetch-blob-work-iq.md) contract.
 
 ## Contract and evidence provenance
 
@@ -167,13 +166,13 @@ copy, move, rename, or delete; reconcile safely or report outcome unknown.
 - **Failures:** never invent a raw upload tool or send bytes through `do_action`,
   `fetch`, or a guessed HTTP upload flow. The current documented WorkIQ surface
   does not expose `upload_blob`; session support does not change that. If the
-  user wanted replacement, disclose the remaining byte-transfer limitation and
-  provide an authorized destination `webUrl` for manual upload when useful.
+  user wanted replacement, load [workiq-files](../../workiq-files/SKILL.md) for
+  a supported WorkIQ byte-transfer workflow only when an authoritative WorkIQ
+  reference is available; do not pass the Graph session URL or item ID as one.
+  Otherwise disclose the limitation and provide an authorized destination
+  `webUrl` for manual upload when useful. Never switch routes after denial.
   Do not recreate an ambiguous session automatically.
 
 ## Download content
 
-Resolve an exact file with the identity rules above, then use
-[fetch_blob](fetch-blob-work-iq.md) on its content path. A metadata read or
-returned download URL is not downloaded bytes. Preserve supported OneDrive and
-SharePoint downloads and file-attachment selection via [Mail](mail-work-iq.md).
+Load [workiq-files](../../workiq-files/SKILL.md) for content downloads and use the CLI for authoritative WorkIQ file references. For supported Graph content paths, resolve an exact file with the identity rules above, then retain [fetch_blob](fetch-blob-work-iq.md). A metadata read or returned download URL is not downloaded bytes. Preserve supported OneDrive and SharePoint downloads and file-attachment selection via [Mail](mail-work-iq.md); never guess a conversion from those IDs to CLI references.

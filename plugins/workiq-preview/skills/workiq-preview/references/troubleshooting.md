@@ -85,10 +85,7 @@ not grant runtime permission or prove a request was accepted.
 
 ## `fetch_blob` or `upload_blob` unavailable
 
-For downloads, use the advertised `fetch_blob` only; report its absence without
-guessing variants. See [downloads](fetch-blob-work-iq.md). Graph `upload_blob` is
-not released; session creation is not byte upload or content replacement. See
-[files](files-work-iq.md) and [upload limitations](upload-blob-work-iq.md).
+For supported Graph downloads, use only the advertised `fetch_blob`; report its absence without guessing variants. For actual WorkIQ file transfer, load [workiq-files](../../workiq-files/SKILL.md) and require an authoritative WorkIQ reference, its EULA gate, and transfer authorization. Missing tools do not establish CLI-compatible IDs; a denial never authorizes a switch of mechanisms. See [downloads](fetch-blob-work-iq.md). Graph `upload_blob` is not released; session creation is not byte upload or content replacement. See [files](files-work-iq.md) and [upload limitations](upload-blob-work-iq.md).
 
 ## `ask` is slow or times out
 

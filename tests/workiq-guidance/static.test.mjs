@@ -191,3 +191,58 @@ test('search_paths examples validate query and legacy filter as exclusive inputs
   assert.match(exampleProblems(nullValue).join(' '), /must be a JSON object/);
   assert.match(exampleProblems(arrayValue).join(' '), /must be a JSON object/);
 });
+
+const filesSkillFile = path.join(root, 'plugins', 'workiq-preview', 'skills', 'workiq-files', 'SKILL.md');
+const filesSkill = fs.readFileSync(filesSkillFile, 'utf8');
+
+test('Work IQ Files skill has valid discoverable frontmatter and links', () => {
+  check(frontmatterProblems(filesSkill, 'workiq-files'));
+  check(linkProblems(filesSkillFile, filesSkill));
+  const { frontmatter } = parseMarkdown(filesSkill);
+  for (const term of ['WorkIQ files', 'download', 'upload', 'EULA', 'authentication', 'status']) {
+    assert.ok(frontmatter.description.includes(term), `Missing Files skill discovery term: ${term}`);
+  }
+});
+
+test('Work IQ Files documents verified 0.1.1 commands and explicit EULA gate', () => {
+  const { codes } = parseMarkdown(filesSkill);
+  const commands = codes.map(code => code.value).join('\n');
+  for (const command of [
+    'npm install --global @microsoft/workiq-files@0.1.1 --registry=https://packagefeedproxy.microsoft.io/npm/',
+    'workiq-files --version', 'workiq-files --help', 'workiq-files eula show',
+    'workiq-files accept-eula', 'workiq-files auth login',
+    'workiq-files auth account list', 'workiq-files auth account use --account',
+    'workiq-files status --file-id', 'workiq-files download --file-id',
+    'workiq-files upload --file-id', 'workiq-files download --reference'
+  ]) {
+    assert.ok(commands.includes(command), `Missing verified command: ${command}`);
+  }
+  for (const code of codes.filter(code => code.value.includes('workiq-files accept-eula'))) {
+    assert.equal(code.value, 'workiq-files accept-eula', 'Acceptance must remain a separate command');
+  }
+  assert.match(filesSkill, /explicit permission to accept this agreement on their behalf/);
+  assert.match(filesSkill, /no interactive confirmation prompt/);
+  assert.match(filesSkill, /silence is not EULA consent/);
+  assert.match(filesSkill, /never run it as an automatic error-recovery step/i);
+  assert.match(filesSkill, /Changed terms require renewed review and explicit permission/);
+});
+
+test('Work IQ Files preserves metadata, identity, secrets, and transfer boundaries', () => {
+  assert.match(filesSkill, /entity tools for structured metadata queries/);
+  assert.match(filesSkill, /Graph drive-item ID[\s\S]{0,200}not automatically a WorkIQ/);
+  assert.match(filesSkill, /Never expose access\/refresh tokens[\s\S]{0,100}signed URLs/);
+  assert.match(filesSkill, /Do not fall back to Graph[\s\S]{0,180}denied operation/);
+  assert.match(filesSkill, /Session creation[\s\S]{0,100}is not uploaded content/);
+  assert.match(filesSkill, /Do not blindly replay an ambiguous upload/);
+  assert.match(filesSkill, /--overwrite[\s\S]{0,100}explicit authorization/);
+  for (const name of packages) {
+    const skill = fs.readFileSync(path.join(skillRoot(name), 'SKILL.md'), 'utf8');
+    assert.match(skill, /Load \[workiq-files\]\(\.\.\/workiq-files\/SKILL\.md\)/);
+    assert.match(skill, /Structured metadata queries remain on entity tools/);
+    for (const file of ['files-work-iq.md', 'fetch-blob-work-iq.md',
+      'upload-blob-work-iq.md', 'workflows-work-iq.md', 'troubleshooting.md']) {
+      assert.ok(fs.readFileSync(path.join(skillRoot(name), 'references', file), 'utf8')
+        .includes('../../workiq-files/SKILL.md'), `${file}: missing Files skill dispatch`);
+    }
+  }
+});

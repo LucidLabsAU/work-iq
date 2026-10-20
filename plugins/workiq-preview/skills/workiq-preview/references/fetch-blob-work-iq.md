@@ -1,5 +1,7 @@
 # fetch_blob
 
+Load [workiq-files](../../workiq-files/SKILL.md) before content downloads. That skill owns CLI transfers for authoritative WorkIQ file references; this reference retains the separate supported Graph file and attachment routes. Do not convert Graph IDs or signed download URLs into guessed CLI references, or switch mechanisms after denial.
+
 Read binary content, not JSON metadata. The documented tool returns up to 4 MB
 as `base64Content` with content type, filename, and size metadata. Confirm the
 connected tool's current schema/limits; these path examples are inherited
@@ -74,8 +76,8 @@ their existence must not be guessed from mail examples.
 endpoint; it is not universal for attachments or every document type.
 Unsupported conversion requires a limitation, not repeated guessed formats.
 
-Binary download does not enable upload. [Files](files-work-iq.md) owns the
+Binary download does not enable upload through this MCP tool. [Files](files-work-iq.md) owns the
 existing-item upload-session recipe and distinguishes session creation from
 uploaded bytes and replacement. `upload_blob` is not currently exposed; do not
 invent a raw upload operation or claim a file was replaced because a session
-was created.
+was created. For actual WorkIQ uploads with authoritative references, load [workiq-files](../../workiq-files/SKILL.md); its EULA and transfer authorization gates apply separately.

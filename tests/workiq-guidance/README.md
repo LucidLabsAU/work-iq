@@ -46,6 +46,7 @@ preview only. Its counts are not the current suite's scope or results.
   plugin manifests. The public package is not subject to preview metadata policy.
   Metadata also retains explicit workloads and actions ahead of routing policy,
   guarding discovery coverage without claiming a measured agent-quality effect.
+- **Files CLI documentation checks** cover the bundled `workiq-files` skill's frontmatter, links, verified 0.1.1 command examples, explicit EULA permission gate, transfer dispatch, and metadata/identity/secret boundaries. They are static checks, not live authentication or transfer tests; CI never accepts an EULA or accesses tenant files.
 - **Oracle tests** prove that the assertion runner accepts/rejects specified trace
   structures, including wrong actual calls, missing approval, replay and false outcomes.
 - **Observed host/mock tests** require a separately instrumented host to load the
