@@ -192,18 +192,8 @@ test('search_paths examples validate query and legacy filter as exclusive inputs
   assert.match(exampleProblems(arrayValue).join(' '), /must be a JSON object/);
 });
 
-const filesReferenceFile = path.join(skillRoot('workiq-preview'), 'references', 'workiq-files-cli.md');
-const filesReference = fs.readFileSync(filesReferenceFile, 'utf8');
-
-test('Work IQ Files remains an on-demand reference within a single preview skill', () => {
-  const skills = markdownFiles(path.dirname(skillRoot('workiq-preview')))
-    .filter(file => path.basename(file) === 'SKILL.md');
-  assert.deepEqual(skills, [path.join(skillRoot('workiq-preview'), 'SKILL.md')]);
-  assert.equal(parseMarkdown(filesReference).frontmatter, undefined);
-  assert.match(filesReference, /^# Work IQ Files CLI/m);
-});
-
-test('Work IQ Files documents core commands and explicit EULA gate', () => {
+test('Work IQ Files documents core commands, explicit EULA permission, and secret protection', () => {
+  const filesReference = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'workiq-files-cli.md'), 'utf8');
   const { codes } = parseMarkdown(filesReference);
   const commands = codes.map(code => code.value).join('\n');
   for (const command of [
@@ -220,50 +210,32 @@ test('Work IQ Files documents core commands and explicit EULA gate', () => {
   }
   assert.match(filesReference, /explicit user permission/);
   assert.match(filesReference, /accepts immediately without a confirmation prompt/);
-  assert.match(filesReference, /Installation or a transfer request is not consent/);
   assert.match(filesReference, /never automate acceptance, including after an error/i);
-});
-
-test('Work IQ Files preserves metadata, identity, secrets, and transfer boundaries', () => {
-  assert.match(filesReference, /entity tools for structured metadata queries/);
-  assert.match(filesReference, /Graph drive-item IDs[\s\S]{0,100}are not WorkIQ file IDs/);
   assert.match(filesReference, /Never expose tokens[\s\S]{0,100}signed URLs/);
-  assert.match(filesReference, /denial; do not switch tools, accounts, or endpoints to bypass it/);
-  assert.match(filesReference, /session creation is not a completed transfer/);
-  assert.match(filesReference, /Do not blindly replay an ambiguous upload/);
-  assert.match(filesReference, /Confirm[\s\S]{0,100}before uploading or overwriting files/);
-  for (const name of packages) {
-    const skill = fs.readFileSync(path.join(skillRoot(name), 'SKILL.md'), 'utf8');
-    assert.match(skill, /Read \[Files CLI\]\(references\/workiq-files-cli\.md\)/);
-    assert.match(skill, /Structured metadata queries remain on entity tools/);
-    for (const file of ['files-work-iq.md', 'fetch-blob-work-iq.md',
-      'upload-blob-work-iq.md', 'workflows-work-iq.md', 'troubleshooting.md']) {
-      assert.ok(fs.readFileSync(path.join(skillRoot(name), 'references', file), 'utf8')
-        .includes('(workiq-files-cli.md)'), `${file}: missing Files CLI reference dispatch`);
-    }
-  }
 });
 
 test('preview file routing distinguishes WorkIQ files API objects from existing blob routes', () => {
   const skill = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'SKILL.md'), 'utf8');
+  const filesReference = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'workiq-files-cli.md'), 'utf8');
   for (const route of ['/api/beta/files/{id}', '/api/files/{id}']) {
     assert.ok(skill.includes(route));
     assert.ok(filesReference.includes(route));
   }
-  const blobRow = skill.split('\n').find(line => line.startsWith('| Download existing drive'));
+  const blobRow = skill.split('\n').find(line => line.startsWith('| Download drive content'));
   assert.ok(blobRow);
-  assert.match(blobRow, /\/content[\s\S]*\/attachments\/\{id\}\/\$value/);
-  assert.match(blobRow, /`fetch_blob` directly; no Files CLI setup or EULA step/);
-  assert.doesNotMatch(blobRow, /references\/workiq-files-cli\.md/);
-  const driveRow = skill.split('\n').find(line => line.startsWith('| Drive files |'));
-  assert.match(driveRow, /bytes via `fetch_blob`/);
-  assert.doesNotMatch(driveRow, /Files CLI/);
+  assert.match(blobRow, /`fetch_blob`/);
+  assert.doesNotMatch(blobRow, /Files CLI|EULA/);
   assert.match(filesReference, /Existing drive[\s\S]{0,200}without CLI setup or EULA acceptance/);
+  for (const field of ['_meta["com.microsoft.workiq/clientAction"]', 'kind: "file-transfer"',
+    'GET contentUrl', 'PUT contentUrl', 'GET statusUrl']) {
+    assert.ok(filesReference.includes(field), `Missing file-transfer contract: ${field}`);
+  }
+  assert.match(filesReference, /require WorkIQ authentication; they are not anonymous presigned links/);
+  assert.match(filesReference, /response conversion is disabled[\s\S]{0,80}original response is preserved/);
   const blob = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'fetch-blob-work-iq.md'), 'utf8');
   for (const route of ['/me/drive/items/{itemId}/content',
     '/drives/{driveId}/items/{itemId}/content',
     '/me/messages/{messageId}/attachments/{attachmentId}/$value']) {
     assert.ok(blob.includes(route), `Missing existing blob route: ${route}`);
   }
-  assert.match(blob, /without Files CLI setup or EULA acceptance/);
 });

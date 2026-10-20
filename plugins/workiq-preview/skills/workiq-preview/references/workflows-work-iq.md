@@ -16,8 +16,7 @@ Domain references own their endpoint recipes.
 | Mail filters, exact exchange summary, persisted reply draft, send/forward/delete, or attachment selection | [Mail](mail-work-iq.md) |
 | Chats, channel members/messages, exact message summaries, reactions, or presence | [Teams](teams-work-iq.md) |
 | Structured plan discovery and Planner tasks | [Tasks](tasks-work-iq.md) |
-| Existing OneDrive/SharePoint `/content` or mail attachment bytes | [Binary download](fetch-blob-work-iq.md); no CLI setup or EULA step |
-| WorkIQ file objects at `/api/beta/files/{id}` or `/api/files/{id}` | [Files CLI](workiq-files-cli.md) |
+| OneDrive/SharePoint or attachment bytes | [Binary download](fetch-blob-work-iq.md) |
 | Explicit structured delta/change synchronization | [Functions and checkpoints](call-function-work-iq.md) |
 | Exact entities or complete structured collections | [Fetch](fetch-work-iq.md); no retrieval preflight |
 
@@ -52,8 +51,6 @@ package configures MCP server `workiq-preview`; use the server identity from its
 
 The bundled `.mcp.json` points to the hosted endpoint
 `https://workiq.svc.cloud.microsoft/mcp`; MCP calls need no local runtime install.
-The [Files CLI reference](workiq-files-cli.md) covers WorkIQ files API objects only; its local setup and EULA gate do not apply to existing Graph content/attachment downloads. Installing this plugin does not install the CLI or accept its terms.
-
 The host attaches an authenticated Microsoft 365 user token. Never put tokens in
 prompts, tool arguments, or plugin files. Obtain the intended account from the
 user/host, not local git or OS identity. Authentication or consent remediation

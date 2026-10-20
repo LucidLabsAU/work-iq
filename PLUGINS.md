@@ -147,8 +147,6 @@ Installing the plugin does not enable tenant-gated retrieval.
 |-------|-------------|
 | [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Load before using WorkIQ tools. Retrieve context with explicit Grounding; delegate only intentionally; keep exact operations on entity tools. Missing retrieval requires disclosure and user-selected delegation, never automatic `ask` fallback. |
 
-For WorkIQ file transfers, read the skill's [Files CLI reference](./plugins/workiq-preview/skills/workiq-preview/references/workiq-files-cli.md).
-
 ### Example prompts
 
 ```

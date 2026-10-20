@@ -1,6 +1,7 @@
 # Files and drive items
 
-Canonical contract for exact file metadata and drive-item operations. Structured metadata stays on entity tools; drive content and attachment downloads use [fetch_blob](fetch-blob-work-iq.md). The separate WorkIQ file objects at `/api/beta/files/{id}` or `/api/files/{id}` use [Files CLI](workiq-files-cli.md), not the Graph drive-item IDs here.
+Canonical contract for exact file metadata and drive-item operations. Use
+[fetch_blob](fetch-blob-work-iq.md) for bytes.
 
 ## Contract and evidence provenance
 
@@ -166,12 +167,13 @@ copy, move, rename, or delete; reconcile safely or report outcome unknown.
 - **Failures:** never invent a raw upload tool or send bytes through `do_action`,
   `fetch`, or a guessed HTTP upload flow. The current documented WorkIQ surface
   does not expose `upload_blob`; session support does not change that. If the
-  user wanted replacement, disclose the limitation and provide an authorized
-  destination `webUrl` for manual upload when useful. [Files CLI](workiq-files-cli.md)
-  handles separate WorkIQ files API objects, not Graph upload sessions or drive
-  items. Never switch routes after denial.
+  user wanted replacement, disclose the remaining byte-transfer limitation and
+  provide an authorized destination `webUrl` for manual upload when useful.
   Do not recreate an ambiguous session automatically.
 
 ## Download content
 
-Resolve an exact drive file with the identity rules above, then use [fetch_blob](fetch-blob-work-iq.md) on its supported content path. File-attachment selection follows [Mail](mail-work-iq.md). These downloads do not require Files CLI setup or EULA acceptance. A metadata read or returned download URL is not downloaded bytes.
+Resolve an exact file with the identity rules above, then use
+[fetch_blob](fetch-blob-work-iq.md) on its content path. A metadata read or
+returned download URL is not downloaded bytes. Preserve supported OneDrive and
+SharePoint downloads and file-attachment selection via [Mail](mail-work-iq.md).

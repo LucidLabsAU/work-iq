@@ -4,8 +4,6 @@
 upload alias, or treat a future parameter example as an available tool. WorkIQ
 cannot accept raw OneDrive/SharePoint byte payloads through this surface.
 
-The separate WorkIQ file objects at `/api/beta/files/{id}` or `/api/files/{id}` use [Files CLI](workiq-files-cli.md) after EULA permission and authentication. This is a different object type, not an alternative upload path for Graph drive items or sessions; never use it to bypass a denial.
-
 The canonical [Files](files-work-iq.md) reference owns upload-session creation,
 drive/item resolution, and byte-transfer limitations. A created session is not an
 uploaded or replaced file. Report the operation actually completed and any remaining

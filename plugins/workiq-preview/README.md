@@ -110,13 +110,11 @@ Use `ask` when the user explicitly requests Copilot's or a specific agent's answ
 "Move the design review thread to the Archive folder"
 ```
 
-Existing drive `/content` and mail attachment downloads stay on `fetch_blob`, which returns up to 4 MB as base64 with metadata; they need no CLI setup or EULA step. Structured file metadata queries stay on entity tools.
-
-### Work IQ Files CLI
+`fetch_blob` downloads binary content up to 4 MB and returns it base64-encoded with metadata.
 
 File objects at `/api/beta/files/{id}` or `/api/files/{id}` use the skill's [Files CLI reference](./skills/workiq-preview/references/workiq-files-cli.md). The CLI requires Node.js 20+; installing the plugin does not install it or accept its terms. EULA acceptance requires explicit user permission.
 
-> ⚠️ Graph `upload_blob` is not released. The separate CLI does not turn a Graph upload session into transferred bytes: “session created; no bytes uploaded” is not “file replaced.”
+> ⚠️ `upload_blob` is not released. Creating an upload session is supported separately from sending bytes: “session created; no bytes uploaded” is not “file replaced.”
 
 ## Skills
 
@@ -132,7 +130,7 @@ owns operation-aware recovery.
 
 | Skill | Description |
 |-------|-------------|
-| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Retrieve-first context with explicit Grounding; intentional agent delegation; structured reads/writes and on-demand Files CLI guidance for explicit EULA consent, authentication, status, upload, and download |
+| [**workiq-preview**](./skills/workiq-preview/SKILL.md) | Retrieve-first context with explicit Grounding; intentional agent delegation; exact reads/writes and Graph downloads on entity tools; WorkIQ files API transfers via Files CLI |
 
 ## Platform Support
 

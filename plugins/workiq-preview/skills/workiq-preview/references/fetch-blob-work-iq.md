@@ -1,7 +1,5 @@
 # fetch_blob
 
-Use `fetch_blob` for existing drive `/content` and mail attachment routes below, without Files CLI setup or EULA acceptance. The distinct WorkIQ file objects at `/api/beta/files/{id}` or `/api/files/{id}` use [Files CLI](workiq-files-cli.md); do not convert Graph IDs into CLI references or switch mechanisms after denial.
-
 Read binary content, not JSON metadata. The documented tool returns up to 4 MB
 as `base64Content` with content type, filename, and size metadata. Confirm the
 connected tool's current schema/limits; these path examples are inherited
@@ -76,8 +74,8 @@ their existence must not be guessed from mail examples.
 endpoint; it is not universal for attachments or every document type.
 Unsupported conversion requires a limitation, not repeated guessed formats.
 
-Binary download does not enable upload through this MCP tool. [Files](files-work-iq.md) owns the
+Binary download does not enable upload. [Files](files-work-iq.md) owns the
 existing-item upload-session recipe and distinguishes session creation from
 uploaded bytes and replacement. `upload_blob` is not currently exposed; do not
 invent a raw upload operation or claim a file was replaced because a session
-was created. [Files CLI](workiq-files-cli.md) handles separate WorkIQ files API objects, not these Graph drive items or upload sessions.
+was created.

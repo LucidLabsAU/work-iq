@@ -85,7 +85,10 @@ not grant runtime permission or prove a request was accepted.
 
 ## `fetch_blob` or `upload_blob` unavailable
 
-Existing drive content and attachment downloads use `fetch_blob`; report its absence without guessing variants or switching to the CLI. Only WorkIQ file objects at `/api/beta/files/{id}` or `/api/files/{id}` use [Files CLI](workiq-files-cli.md). A denial never authorizes a switch of mechanisms. See [downloads](fetch-blob-work-iq.md). Graph `upload_blob` is not released; session creation is not byte upload or content replacement. See [files](files-work-iq.md) and [upload limitations](upload-blob-work-iq.md).
+For downloads, use the advertised `fetch_blob` only; report its absence without
+guessing variants. See [downloads](fetch-blob-work-iq.md). Graph `upload_blob` is
+not released; session creation is not byte upload or content replacement. See
+[files](files-work-iq.md) and [upload limitations](upload-blob-work-iq.md).
 
 ## `ask` is slow or times out
 
