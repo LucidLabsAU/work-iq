@@ -78,7 +78,7 @@ copilot plugin uninstall workiq-productivity
 | # | Plugin | Skills | Description |
 |---|--------|--------|-------------|
 | 1 | [**workiq**](#workiq) | 1 | Full WorkIQ tool surface — agentic queries plus direct M365 reads and writes |
-| 2 | [**workiq-preview**](#workiq-preview) | 2 | Preview retrieve-first context, intentional delegation, exact M365 operations, and Work IQ Files CLI |
+| 2 | [**workiq-preview**](#workiq-preview) | 1 | Preview retrieve-first context, intentional delegation, exact M365 operations, and Work IQ Files CLI |
 | 3 | [**microsoft-365-agents-toolkit**](#microsoft-365-agents-toolkit) | 4 | Toolkit for building M365 Copilot declarative agents |
 | 4 | [**workiq-productivity**](#workiq-productivity) | 10 | Read-only productivity insights across M365 |
 
@@ -146,7 +146,8 @@ Installing the plugin does not enable tenant-gated retrieval.
 | Skill | Description |
 |-------|-------------|
 | [**workiq-preview**](./plugins/workiq-preview/skills/workiq-preview/SKILL.md) | Load before using WorkIQ tools. Retrieve context with explicit Grounding; delegate only intentionally; keep exact operations on entity tools. Missing retrieval requires disclosure and user-selected delegation, never automatic `ask` fallback. |
-| [**workiq-files**](./plugins/workiq-preview/skills/workiq-files/SKILL.md) | Load for WorkIQ file access, content downloads, or local-file uploads. Install `@microsoft/workiq-files@0.1.1` from the Microsoft feed; review EULA and obtain explicit permission before acceptance, then authenticate and transfer without exposing tokens or signed URLs. |
+
+File access and byte transfers are part of the same skill: read its on-demand [Files CLI reference](./plugins/workiq-preview/skills/workiq-preview/references/workiq-files-cli.md) for installation, explicit EULA permission, authentication, status, upload, and download. Structured metadata stays on entity tools; tokens and signed URLs must not be exposed.
 
 ### Example prompts
 

@@ -1,28 +1,14 @@
----
-name: workiq-files
-description: >
-  Use the Work IQ Files CLI to access WorkIQ files, download file contents, or
-  upload local files. Covers installation of @microsoft/workiq-files from the
-  Microsoft package feed, EULA review and explicit user permission before
-  accept-eula, authentication, account selection, status, upload, and download.
-  Load before WorkIQ file transfers; distinguish structured metadata and Graph
-  file/attachment operations from actual WorkIQ byte transfers. Never expose
-  tokens or signed transfer URLs.
-compatibility: >
-  Requires a local shell and Node.js 20+ for the npm launcher. Version 0.1.1
-  bundles Windows, Linux, and macOS executables for x64 and ARM64. Linux
-  authentication requires a working Secret Service keyring.
----
-
 # Work IQ Files CLI
 
-Use this skill before accessing WorkIQ files or transferring file contents between WorkIQ and the local filesystem. Commands below were checked against the published `@microsoft/workiq-files@0.1.1` README, `workiq-files --help`, `workiq-files --version`, and `workiq-files eula show`. Subcommand `--help` is not a substitute for top-level help: in 0.1.1, `download --help` still hits the EULA gate. Help verification does not establish live tenant access or successful transfers.
+Read this reference from the [WorkIQ skill](../SKILL.md) before accessing WorkIQ files or transferring file contents between WorkIQ and the local filesystem. It is an on-demand workflow within that skill, not a separate skill. Requires a local shell and Node.js 20+ for the npm launcher; version 0.1.1 bundles Windows, Linux, and macOS executables for x64 and ARM64. Linux authentication requires a working Secret Service keyring.
+
+Commands below were checked against the published `@microsoft/workiq-files@0.1.1` README, `workiq-files --help`, `workiq-files --version`, and `workiq-files eula show`. Subcommand `--help` is not a substitute for top-level help: in 0.1.1, `download --help` still hits the EULA gate. Help verification does not establish live tenant access or successful transfers.
 
 ## Choose metadata or bytes
 
-Use the main [WorkIQ skill](../workiq-preview/SKILL.md) and its entity tools for structured metadata queries, file discovery, filtering, folder listings, and rename/move/copy/delete operations. Metadata or a returned URL is not file content. Use this CLI for actual WorkIQ file status, downloads, and uploads after obtaining an authoritative WorkIQ file ID or canonical authenticated reference from a supported WorkIQ control-plane operation.
+Use the main [WorkIQ skill](../SKILL.md) and its entity tools for structured metadata queries, file discovery, filtering, folder listings, and rename/move/copy/delete operations. Metadata or a returned URL is not file content. Use this CLI for actual WorkIQ file status, downloads, and uploads after obtaining an authoritative WorkIQ file ID or canonical authenticated reference from a supported WorkIQ control-plane operation.
 
-Do not invent a control-plane endpoint or reference JSON shape. Discover an unknown operation and its live schema through WorkIQ, or use a trusted reference already provided for the requested file. Preserve opaque identifiers. A Graph drive-item ID, attachment ID, ordinary SharePoint/OneDrive sharing URL, or signed storage/upload-session URL is not automatically a WorkIQ `--file-id` or canonical `--reference`. If no supported WorkIQ reference is available, report that limitation rather than guessing a conversion. For an explicitly supported Graph file or mail attachment content route, retain the separate [fetch_blob contract](../workiq-preview/references/fetch-blob-work-iq.md); do not route an attachment ID into this CLI.
+Do not invent a control-plane endpoint or reference JSON shape. Discover an unknown operation and its live schema through WorkIQ, or use a trusted reference already provided for the requested file. Preserve opaque identifiers. A Graph drive-item ID, attachment ID, ordinary SharePoint/OneDrive sharing URL, or signed storage/upload-session URL is not automatically a WorkIQ `--file-id` or canonical `--reference`. If no supported WorkIQ reference is available, report that limitation rather than guessing a conversion. For an explicitly supported Graph file or mail attachment content route, retain the separate [fetch_blob contract](fetch-blob-work-iq.md); do not route an attachment ID into this CLI.
 
 ## Install and inspect
 
