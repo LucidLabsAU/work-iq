@@ -1,6 +1,6 @@
 # Work IQ Files CLI
 
-Use the CLI for WorkIQ file status, downloads, and uploads. Use entity tools for structured metadata queries. Require an authoritative WorkIQ file ID or reference; Graph drive-item IDs and signed storage URLs are not WorkIQ file IDs or references. Supported Graph file and attachment downloads still use [fetch_blob](fetch-blob-work-iq.md).
+Use the CLI for file objects at `/api/beta/files/{id}` or `/api/files/{id}`. Pass the returned ID/reference to the commands below. Existing drive `/content` and mail `/attachments/{id}/$value` downloads stay on [fetch_blob](fetch-blob-work-iq.md), without CLI setup or EULA acceptance. Use entity tools for structured metadata queries; Graph drive-item IDs and signed storage URLs are not WorkIQ file IDs or references.
 
 ## Install
 

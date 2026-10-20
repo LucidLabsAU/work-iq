@@ -243,3 +243,27 @@ test('Work IQ Files preserves metadata, identity, secrets, and transfer boundari
     }
   }
 });
+
+test('preview file routing distinguishes WorkIQ files API objects from existing blob routes', () => {
+  const skill = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'SKILL.md'), 'utf8');
+  for (const route of ['/api/beta/files/{id}', '/api/files/{id}']) {
+    assert.ok(skill.includes(route));
+    assert.ok(filesReference.includes(route));
+  }
+  const blobRow = skill.split('\n').find(line => line.startsWith('| Download existing drive'));
+  assert.ok(blobRow);
+  assert.match(blobRow, /\/content[\s\S]*\/attachments\/\{id\}\/\$value/);
+  assert.match(blobRow, /`fetch_blob` directly; no Files CLI setup or EULA step/);
+  assert.doesNotMatch(blobRow, /references\/workiq-files-cli\.md/);
+  const driveRow = skill.split('\n').find(line => line.startsWith('| Drive files |'));
+  assert.match(driveRow, /bytes via `fetch_blob`/);
+  assert.doesNotMatch(driveRow, /Files CLI/);
+  assert.match(filesReference, /Existing drive[\s\S]{0,200}without CLI setup or EULA acceptance/);
+  const blob = fs.readFileSync(path.join(skillRoot('workiq-preview'), 'references', 'fetch-blob-work-iq.md'), 'utf8');
+  for (const route of ['/me/drive/items/{itemId}/content',
+    '/drives/{driveId}/items/{itemId}/content',
+    '/me/messages/{messageId}/attachments/{attachmentId}/$value']) {
+    assert.ok(blob.includes(route), `Missing existing blob route: ${route}`);
+  }
+  assert.match(blob, /without Files CLI setup or EULA acceptance/);
+});

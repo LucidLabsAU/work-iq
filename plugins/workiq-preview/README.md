@@ -110,11 +110,11 @@ Use `ask` when the user explicitly requests Copilot's or a specific agent's answ
 "Move the design review thread to the Archive folder"
 ```
 
-`fetch_blob` retains supported Graph file/attachment downloads up to 4 MB as base64 with metadata. Structured file metadata queries stay on entity tools; read the [Files CLI reference](./skills/workiq-preview/references/workiq-files-cli.md) within the existing `workiq-preview` skill before accessing WorkIQ files, downloading content, or uploading local files.
+Existing drive `/content` and mail attachment downloads stay on `fetch_blob`, which returns up to 4 MB as base64 with metadata; they need no CLI setup or EULA step. Structured file metadata queries stay on entity tools.
 
 ### Work IQ Files CLI
 
-For installation, EULA review, authentication, and transfer commands, follow the skill's [Files CLI reference](./skills/workiq-preview/references/workiq-files-cli.md). The CLI requires Node.js 20+; installing the plugin does not install it or accept its terms. EULA acceptance requires explicit user permission.
+File objects at `/api/beta/files/{id}` or `/api/files/{id}` use the skill's [Files CLI reference](./skills/workiq-preview/references/workiq-files-cli.md). The CLI requires Node.js 20+; installing the plugin does not install it or accept its terms. EULA acceptance requires explicit user permission.
 
 > ⚠️ Graph `upload_blob` is not released. The separate CLI does not turn a Graph upload session into transferred bytes: “session created; no bytes uploaded” is not “file replaced.”
 

@@ -1,9 +1,9 @@
 ---
 name: workiq-preview
-description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, meetings, calendar, files, SharePoint, OneDrive, Teams, people, Planner, and connected work context. Triggers include gather requirements, summarize discussions, manage meetings, send or draft replies, manage tasks, and discover paths or schemas. Retrieve context first with explicit Grounding when available and synthesize locally; use ask only for intentional delegation to Copilot or a known/discovered agent. Exact entities, metadata, and writes use entity tools; read the Files CLI reference for WorkIQ file access, content downloads, or local-file uploads. This skill contains instructions for the WorkIQ MCP tools and must be used beforehand to understand their usage. Also use for Microsoft Business Applications CRM, ERP, Power Apps, or Dataverse records and workflows, including /businessapps/ paths.
+description: WorkIQ tools for Microsoft 365 workplace data and actions. Use for email, meetings, calendar, files, SharePoint, OneDrive, Teams, people, Planner, and connected work context. Triggers include gather requirements, summarize discussions, manage meetings, send or draft replies, manage tasks, and discover paths or schemas. Retrieve context first with explicit Grounding when available and synthesize locally; use ask only for intentional delegation to Copilot or a known/discovered agent. Exact entities, metadata, and writes use entity tools. Existing content/attachment downloads use fetch_blob; WorkIQ files API objects use the Files CLI reference. This skill contains instructions for the WorkIQ MCP tools and must be used beforehand to understand their usage. Also use for Microsoft Business Applications CRM, ERP, Power Apps, or Dataverse records and workflows, including /businessapps/ paths.
 compatibility: >
   Uses the hosted WorkIQ MCP endpoint. No local package is required for MCP
-  tool calls. WorkIQ file transfers additionally require a local shell and
+  tool calls. WorkIQ files API transfers require a local shell and
   Node.js 20+ for the Files CLI; see the on-demand reference.
 ---
 
@@ -31,8 +31,8 @@ before calling. Never guess aliases or derive prefixes from a skill folder.
 | Update fields / delete an existing entity | `update_entity` / `delete_entity` |
 | Execute an action (send, reply, createReply, forward, accept, decline) | `do_action` |
 | Call an OData function (delta, reminderView, named-file search) | `call_function` |
-| Access WorkIQ files, download file contents, or upload local files | Read [Files CLI](references/workiq-files-cli.md) before transfer; use authoritative WorkIQ file IDs/references |
-| Download a supported Graph file or mail attachment | Read [Files CLI](references/workiq-files-cli.md) for the transfer boundary; retain `fetch_blob` for its supported Graph routes, not CLI IDs |
+| Transfer WorkIQ file objects at `/api/beta/files/{id}` or `/api/files/{id}` | Read [Files CLI](references/workiq-files-cli.md); use the returned WorkIQ file ID/reference |
+| Download existing drive `/content` or mail `/attachments/{id}/$value` bytes | `fetch_blob` directly; no Files CLI setup or EULA step |
 | Discover entity paths / inspect operation fields and body shape | `search_paths` / `get_schema` |
 | Discover or use structured records and workflows in CRM, ERP, or Power Apps | `search_paths` for unknown paths; then the exact entity or action tool — read [Business Applications](references/business-applications.md) first |
 
@@ -96,7 +96,8 @@ for exact IDs, attribution, and same-agent `conversationId` continuation.
 | Teams chats | `/me/chats`, `/chats/{chatId}/messages` | list/send; chats and channels are distinct surfaces |
 | Teams channels | `/me/joinedTeams`, `/teams/{teamId}/channels/{channelId}/messages` | list/post/reply/react |
 | People | `/me`, `/users/{id}`, `/me/manager`, `/me/contacts` | profile, org chart, personal contacts; directory and contact IDs are not interchangeable |
-| Files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | metadata via entity tools; named OneDrive search via `call_function`; read [Files CLI](references/workiq-files-cli.md) for content transfer, preserving supported Graph `fetch_blob` routes |
+| Drive files | `/me/drive`, `/drives/{id}`, `/sites/{id}` | metadata via entity tools; bytes via `fetch_blob`; named OneDrive search via `call_function` |
+| WorkIQ file objects | `/api/beta/files/{id}`, `/api/files/{id}` | transfer via [Files CLI](references/workiq-files-cli.md) using the returned ID/reference, not a Graph content path |
 | Planner | `/me/planner/plans`, `/planner/tasks` | list/create/update/complete/delete |
 | Business Applications | `/businessapps/environments/` and discovered `/businessapps/...` paths | direct `fetch` for environment inventory; `search_paths` for unknown records, apps, skills, APIs, and operations |
 | Change tracking | `/me/mailFolders/inbox/messages/delta`, `/me/calendarView/delta`, `/me/contacts/delta` | `call_function` only, never `fetch` |
@@ -116,7 +117,7 @@ for exact IDs, attribution, and same-agent `conversationId` continuation.
 | Create an event | Resolve missing details if needed | `create_entity` `/me/events` |
 | Delete a named OneDrive file | `call_function` search; retain `parentReference.driveId` and item `id` | `delete_entity` `/drives/{driveId}/items/{itemId}` |
 
-**Metadata is not file transfer.** Read [Files CLI](references/workiq-files-cli.md) when accessing WorkIQ files, downloading file contents, or uploading local files. This on-demand reference owns CLI installation, EULA review and explicit user permission before `accept-eula`, authentication, status, and byte transfer; no separate skill is needed. Do not automatically accept terms or expose tokens or signed URLs. Structured metadata queries remain on entity tools; Graph IDs and upload-session URLs are not automatically WorkIQ CLI references. Graph `upload_blob` is not released, and creating an upload session is not uploading content. See [download guidance](references/fetch-blob-work-iq.md) and the [file workflows](references/files-work-iq.md) for the separate supported Graph operations.
+**Route by object, not by transfer intent.** Existing drive content and attachment downloads stay on [fetch_blob](references/fetch-blob-work-iq.md). Only WorkIQ files API objects at `/api/beta/files/{id}` or `/api/files/{id}` use [Files CLI](references/workiq-files-cli.md), with explicit user permission before EULA acceptance. Structured metadata queries remain on entity tools. Do not expose tokens or signed URLs, convert Graph IDs into CLI references, or treat a Graph upload session as uploaded content.
 
 ## URL and Body Format Rules
 
@@ -161,7 +162,7 @@ inline wording or a new message for a requested persisted reply.
 | Exact workflows, setup/authentication, host tool names | [Detailed workflows](references/workflows-work-iq.md) |
 | Semantic evidence / delegated answers / agent selection | [retrieve](references/retrieve-work-iq.md) / [ask](references/ask-work-iq.md) / [Agents](references/agents-work-iq.md) |
 | Copy/move/rename/delete files; upload sessions | [Files](references/files-work-iq.md) |
-| WorkIQ file access; content downloads; local-file uploads | [Files CLI](references/workiq-files-cli.md) |
+| Transfers for WorkIQ files API objects | [Files CLI](references/workiq-files-cli.md) |
 | Cancel/delete/reschedule/forward meetings; reminders/free-busy | [Calendar](references/calendar-work-iq.md) |
 | Mail / Teams / Planner | [Mail](references/mail-work-iq.md) / [Teams](references/teams-work-iq.md) / [Tasks](references/tasks-work-iq.md) |
 | CRM, ERP, Power Apps, Dataverse records and workflows | [Business Applications](references/business-applications.md) |
