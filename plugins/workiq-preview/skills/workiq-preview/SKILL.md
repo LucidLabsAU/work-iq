@@ -30,7 +30,7 @@ before calling. Never guess aliases or derive prefixes from a skill folder.
 | Update fields / delete an existing entity | `update_entity` / `delete_entity` |
 | Execute an action (send, reply, createReply, forward, accept, decline) | `do_action` |
 | Call an OData function (delta, reminderView, named-file search) | `call_function` |
-| WorkIQ file-transfer client action or file objects at `/api/beta/files/{id}` or `/api/files/{id}` | Read [Files CLI](references/workiq-files-cli.md); use the returned WorkIQ file ID/reference |
+| WorkIQ file-transfer client action or file objects at `workiq://file/{id}`, `/api/beta/files/{id}` or `/api/files/{id}` | Read [Files CLI](references/workiq-files-cli.md); use the returned WorkIQ file ID/reference |
 | Download drive content or mail attachment bytes | `fetch_blob` |
 | Discover entity paths / inspect operation fields and body shape | `search_paths` / `get_schema` |
 | Discover or use structured records and workflows in CRM, ERP, or Power Apps | `search_paths` for unknown paths; then the exact entity or action tool — read [Business Applications](references/business-applications.md) first |

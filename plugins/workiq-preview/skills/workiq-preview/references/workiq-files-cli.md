@@ -1,6 +1,6 @@
 # Work IQ Files CLI
 
-Use the CLI for WorkIQ file objects at `/api/beta/files/{id}` or `/api/files/{id}`. When `_meta["com.microsoft.workiq/clientAction"]` has `kind: "file-transfer"`, use its `fileId` as `--file-id` and follow its `direction` and `expiresAt`.
+Use the CLI for WorkIQ file objects at `/api/beta/files/{id}` or `/api/files/{id}` or `workiq://file/{id}`. When you see this in the response, use its `fileId` as `--file-id` and follow its `direction` and `expiresAt`.
 
 The transfer contract is `GET contentUrl` for download, `PUT contentUrl` for upload, and `GET statusUrl` for progress. These URLs require WorkIQ authentication; they are not anonymous presigned links. Use the CLI below to handle authentication and transfer.
 
@@ -11,7 +11,7 @@ When response conversion is disabled, the provider's original response is preser
 Requires Node.js 20+. Install only when needed:
 
 ```powershell
-npm install --global @microsoft/workiq-files@0.1.1 --registry=https://packagefeedproxy.microsoft.io/npm/
+npm install --global @microsoft/workiq-files
 workiq-files --help
 ```
 
