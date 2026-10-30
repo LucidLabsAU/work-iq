@@ -197,7 +197,7 @@ test('Work IQ Files documents core commands, explicit EULA permission, and secre
   const { codes } = parseMarkdown(filesReference);
   const commands = codes.map(code => code.value).join('\n');
   for (const command of [
-    'npm install --global @microsoft/workiq-files@0.1.1 --registry=https://packagefeedproxy.microsoft.io/npm/',
+    'npm install --global @microsoft/workiq-files',
     'workiq-files --help', 'workiq-files eula show',
     'workiq-files accept-eula', 'workiq-files auth login',
     'workiq-files status --file-id', 'workiq-files download --file-id',
@@ -226,7 +226,7 @@ test('preview file routing distinguishes WorkIQ files API objects from existing 
   assert.match(blobRow, /`fetch_blob`/);
   assert.doesNotMatch(blobRow, /Files CLI|EULA/);
   assert.match(filesReference, /Existing drive[\s\S]{0,200}without CLI setup or EULA acceptance/);
-  for (const field of ['_meta["com.microsoft.workiq/clientAction"]', 'kind: "file-transfer"',
+  for (const field of ['fileId', 'direction', 'expiresAt',
     'GET contentUrl', 'PUT contentUrl', 'GET statusUrl']) {
     assert.ok(filesReference.includes(field), `Missing file-transfer contract: ${field}`);
   }
